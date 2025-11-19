@@ -50,40 +50,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ================= HEADER =================
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.fromLTRB(20, 40, 20, 100),
       decoration: const BoxDecoration(
         color: Color(0xFF36546C),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("HAII",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500)),
-                const SizedBox(height: 5),
                 Text(
-                  "Khaif Karol N",
+                  "HALLO!",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Khoir Karol N",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   "Karyawan",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -95,9 +105,13 @@ class _HomePageState extends State<HomePage> {
               );
             },
             child: CircleAvatar(
-              radius: 32,
-              backgroundColor: Colors.white30,
-              child: Icon(Icons.person, color: Colors.white, size: 24),
+              radius: 28,
+              backgroundColor: Colors.white.withOpacity(0.3),
+              child: CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.grey[300],
+                child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+              ),
             ),
           ),
         ],
@@ -105,59 +119,84 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ================= SCHEDULE CARD =================
   Widget _buildScheduleCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Text("Kelas Mandarin",
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Spacer(),
-                Text("Sen, 1 Nov 2025",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Text(
-              "08:00 - 18:00",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-            ),
-            const SizedBox(height: 15),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF36546C),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                minimumSize: Size(double.infinity, 45),
+    return Transform.translate(
+      offset: Offset(0, -50),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 15,
+                offset: Offset(0, 5),
               ),
-              child:
-                  Text("Detail", style: TextStyle(fontWeight: FontWeight.w600)),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "Kelas Mandarin",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Spacer(),
+                  Text(
+                    "Sen, 1 Nov 2025",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "08:00 - 18:00",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 28,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFE75636),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  minimumSize: Size(double.infinity, 48),
+                  elevation: 0,
+                ),
+                child: Text(
+                  "Detail",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ================= MENU =================
   Widget _buildMenuButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -189,12 +228,15 @@ class _HomePageState extends State<HomePage> {
           child: Icon(icon, color: Colors.white, size: 26),
         ),
         const SizedBox(height: 8),
-        Text(title,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        Text(
+          title,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
 
+  // ================= AKTIVITAS (DONUT CHART) =================
   Widget _buildAktivitasChart() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -232,6 +274,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ================= DETAIL BAR =================
   Widget _buildDetailBar({
     required String title,
     required double value,
@@ -274,63 +317,92 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ================= BOTTOM NAV =================
   Widget _buildBottomNav() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black12, blurRadius: 8, offset: Offset(0, -2)),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _bottomItem(Icons.home_filled, "Beranda", true),
-          Container(
-            width: 75,
-            height: 75,
-            decoration: BoxDecoration(
-              color: Color(0xFF36546C),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Icon(Icons.qr_code_2, color: Colors.white, size: 40),
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        Container(
+          height: 70,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _bottomItem(Icons.home, "Beranda", true),
+              SizedBox(width: 80),
+              _bottomItem(Icons.person_outline, "Profile", false),
+            ],
+          ),
+        ),
+
+        // Floating QR Button
+        Positioned(
+          top: -30,
+          child: GestureDetector(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("QR Scanner")),
+              );
+            },
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Color(0xFF36546C),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+                border: Border.all(color: Colors.white, width: 4),
+              ),
+              child: Center(
+                child:
+                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+              ),
             ),
           ),
-          _bottomItem(Icons.person, "Profile", false),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _bottomItem(IconData icon, String label, bool active) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: active ? Color(0xFF36546C) : Colors.grey[400],
-          size: 28,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
+    return GestureDetector(
+      onTap: () {},
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
             color: active ? Color(0xFF36546C) : Colors.grey[400],
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
+            size: 26,
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: active ? Color(0xFF36546C) : Colors.grey[400],
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
