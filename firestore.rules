@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isOperator() {
+        return request.auth != null; 
+    }
+
+    // ==========================================================
+    // ATURAN KOLEKSI ABSENSI (CEK DUPLIKASI)
+    // ==========================================================
+    match /absensi/{absensiId} {
+      
+      allow read: if isOperator(); 
+      allow update, delete: if false; 
+
+      // ATURAN CREATE (PENYIMPANAN BARU)
+      allow create: if isOperator()
+                    && request.resource.data.user_id is int 
+                    && request.resource.data.qr_id is int 
+                    // Memastikan ID dokumen sesuai format: "QR_ID_USER_ID"
+                    && request.resource.data.qr_id.toString() + "_" + request.resource.data.user_id.toString() == absensiId
+                    // PENTING: CEK DUPLIKASI
+                    && !exists(/databases/$(database)/documents/absensi/$(absensiId));
+    }
+
+    // ==========================================================
+    // ATURAN KOLEKSI USERS
+    // ==========================================================
+    match /users/{userId} {
+        // Izinkan Operator/Admin membaca semua data user
+        allow read: if isOperator(); 
+        // Izinkan user menulis/mengupdate data mereka sendiri (saat registrasi/update profil)
+        allow write: if request.auth.uid == userId; 
+    }
+  }
+}
