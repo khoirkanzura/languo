@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function() onSignInTap;
@@ -18,12 +19,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   int _selectedIndex = 1; // aktif tab Register
 
+  // 👉 Tambahan: Role Dropdown
+  String? selectedRole;
+
   Future<void> registerUser() async {
+    if (selectedRole == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pilih Role terlebih dahulu")),
+      );
+      return;
+    }
+
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Membuat akun Firebase Auth
+      UserCredential cred =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+      User? user = cred.user;
+
+      // 👉 Menyimpan data tambahan ke Firestore
+      await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
+        "uid": user.uid,
+        "name": nameController.text.trim(),
+        "email": emailController.text.trim(),
+        "role": selectedRole,
+        "created_at": FieldValue.serverTimestamp(),
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registrasi Berhasil")),
@@ -124,6 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 25),
 
+                  // NAMA
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -133,6 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
+                  // EMAIL
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -142,6 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
+                  // PASSWORD
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -150,6 +177,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: passwordController,
                       obscure: !showPassword,
                       isPassword: true,
+                    ),
+                  ),
+
+                  // 👉 ROLE DROPDOWN
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+
+                        // ⬇️ Border dibuat sama seperti TextField default
+                        border: Border.all(
+                          color: Colors.grey
+                              .shade600, // ❤️ Sama seperti Nama/Email/Password
+                        ),
+
+                        color: Colors.white,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.person_outline,
+                            color: Colors.black,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: selectedRole,
+                                isExpanded: true,
+                                hint: const Text(
+                                  "Role",
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.grey),
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: "karyawan",
+                                    child: Text("Karyawan"),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: "murid",
+                                    child: Text("Murid"),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  setState(() => selectedRole = value);
+                                },
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -182,7 +268,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 35),
 
-                  // DIVIDER
                   Row(
                     children: const [
                       Expanded(child: Divider()),
@@ -196,7 +281,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // SOCIAL LOGIN (contoh UI, backend bisa ditambah)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
