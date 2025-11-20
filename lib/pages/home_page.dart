@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screen/qr_scanner_screen.dart';
-<<<<<<< Updated upstream
-=======
 import 'profile_page.dart';
 import 'package:languo/pages/kehadiran_page.dart';
->>>>>>> Stashed changes
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -154,18 +151,13 @@ class _HomePageState extends State<HomePage> {
                   builder: (context) => QRScannerPage(),
                 ),
               );
-<<<<<<< Updated upstream
-              
-=======
 
               if (!mounted) return;
-
->>>>>>> Stashed changes
               if (result != null) {
                 setState(() {
                   _lastScannedData = result;
                 });
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("QR Code berhasil dipindai!"),
@@ -190,7 +182,8 @@ class _HomePageState extends State<HomePage> {
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+                child:
+                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
               ),
             ),
           ),

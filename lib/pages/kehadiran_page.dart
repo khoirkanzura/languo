@@ -11,10 +11,10 @@ class KehadiranPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ===================== HEADER =====================
+            // ================= HEADER =================
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
               decoration: const BoxDecoration(
                 color: Color(0xFF36546C),
                 borderRadius: BorderRadius.only(
@@ -22,28 +22,34 @@ class KehadiranPage extends StatelessWidget {
                   bottomRight: Radius.circular(30),
                 ),
               ),
-              child: Row(
+              child: Stack(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back,
+                          color: Colors.white, size: 28),
+                    ),
                   ),
-                  const SizedBox(width: 15),
-                  const Text(
-                    "Rekapan Kehadiran",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  const Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      "Rekapan Kehadiran",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   )
                 ],
               ),
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(height: 16),
 
-            // ===================== LIST DATA =====================
+            // ================= LIST DATA =================
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -89,7 +95,30 @@ class KehadiranPage extends StatelessWidget {
     );
   }
 
-  // ===================== CARD WIDGET =====================
+  // ==========================================================
+  //               WARNA OTOMATIS JAM MASUK/KELUAR
+  // ==========================================================
+  Color _getJamColor(String jam) {
+    if (jam.contains("--")) return Colors.grey;
+
+    try {
+      final parts = jam.split(":");
+      final h = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+
+      if (h < 8 || (h == 8 && m <= 10)) {
+        return Colors.green;
+      }
+
+      return Colors.red;
+    } catch (_) {
+      return Colors.black;
+    }
+  }
+
+  // ==========================================================
+  //                       CARD WIDGET
+  // ==========================================================
   Widget _buildCard({
     required String kelas,
     required String masuk,
@@ -99,73 +128,116 @@ class KehadiranPage extends StatelessWidget {
     required Color statusColor,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F7),
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          )
-        ],
+        border: Border.all(color: Colors.grey[200]!, width: 1),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ===================== ICON =====================
-          const Icon(Icons.location_on, color: Colors.red, size: 28),
+          // Row 1: Kelas dan Tanggal
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                kelas,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                tanggal,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color.fromARGB(255, 10, 0, 0),
+                ),
+              ),
+            ],
+          ),
 
-          const SizedBox(width: 15),
+          const SizedBox(height: 10),
 
-          // ===================== TEXT DATA =====================
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  kelas,
-                  style: const TextStyle(
-                    fontSize: 14,
+          // Row 2: Icon, Masuk/Keluar, dan Status
+          Row(
+            children: [
+              // Icon
+              const Icon(Icons.location_on, color: Colors.red, size: 28),
+              const SizedBox(width: 12),
+
+              // Jam Masuk & Keluar
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          "Masuk : ",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          masuk,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: _getJamColor(masuk),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Text(
+                          "Keluar : ",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          keluar,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: _getJamColor(keluar),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Status Badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: statusColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  tanggal,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text("Masuk :  $masuk",
-                    style:
-                        const TextStyle(fontSize: 13, color: Colors.black87)),
-                Text("Keluar :  $keluar",
-                    style:
-                        const TextStyle(fontSize: 13, color: Colors.black87)),
-              ],
-            ),
-          ),
-
-          // ===================== STATUS =====================
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
               ),
-            ),
-          )
+            ],
+          ),
         ],
       ),
     );
