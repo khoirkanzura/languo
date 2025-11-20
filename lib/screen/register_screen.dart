@@ -15,20 +15,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
   bool showPassword = false;
 
-<<<<<<< Updated upstream
   int _selectedIndex = 1; // aktif tab Register
+  String? selectedRole; // role dropdown
 
-  // 👉 Tambahan: Role Dropdown
-  String? selectedRole;
-
-=======
-  int _selectedIndex = 1;
-
-  String? selectedRole;
-
->>>>>>> Stashed changes
   Future<void> registerUser() async {
     if (selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -46,10 +38,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       User? user = cred.user;
 
-<<<<<<< Updated upstream
-      // 👉 Menyimpan data tambahan ke Firestore
-=======
->>>>>>> Stashed changes
       await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
         "uid": user.uid,
         "name": nameController.text.trim(),
@@ -61,15 +49,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registrasi Berhasil")),
       );
-<<<<<<< Updated upstream
-=======
 
-      // WAJIB AGAR TIDAK MASUK HOMEPAGE
       await FirebaseAuth.instance.signOut();
 
-      // 🔥 Pindah ke halaman Sign In
       widget.onSignInTap();
->>>>>>> Stashed changes
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
@@ -206,13 +189,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-
-                        // ⬇️ Border dibuat sama seperti TextField default
                         border: Border.all(
-                          color: Colors.grey
-                              .shade600, // ❤️ Sama seperti Nama/Email/Password
+                          color: Colors.grey.shade600,
                         ),
-
                         color: Colors.white,
                       ),
                       child: Row(

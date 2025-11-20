@@ -55,10 +55,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // =====================
-  // === FIXED RESULT ===
-  // =====================
-
+  // ===================== Scan Result =====================
   Widget _buildScanResultInfo() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -110,6 +107,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ===================== Bottom Nav =====================
   Widget _buildBottomNav() {
     return Stack(
       clipBehavior: Clip.none,
@@ -130,34 +128,31 @@ class _HomePageState extends State<HomePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _bottomItem(Icons.home, "Beranda", true),
+              _bottomItem(Icons.home, "Beranda", true, () {}),
               SizedBox(width: 80),
-              _bottomItem(Icons.person_outline, "Profile", false),
+              _bottomItem(Icons.person_outline, "Profile", false, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                );
+              }),
             ],
           ),
         ),
-
-        // ============================
-        // === FIXED Navigator Logic ==
-        // ============================
-
+        // QR Floating Button
         Positioned(
-          top: -30,
+          top: -20, // dikurangi supaya tidak menutupi header
           child: GestureDetector(
             onTap: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => QRScannerPage(),
-                ),
+                MaterialPageRoute(builder: (context) => QRScannerPage()),
               );
-
               if (!mounted) return;
               if (result != null) {
                 setState(() {
                   _lastScannedData = result;
                 });
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("QR Code berhasil dipindai!"),
@@ -192,6 +187,34 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _bottomItem(
+      IconData icon, String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: active ? Color(0xFF36546C) : Colors.grey[400],
+            size: 26,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: active ? Color(0xFF36546C) : Colors.grey[400],
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===================== Header =====================
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -241,8 +264,9 @@ class _HomePageState extends State<HomePage> {
           ),
           GestureDetector(
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Profile page (coming soon)")),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
               );
             },
             child: CircleAvatar(
@@ -260,12 +284,57 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ----------------------------
-  // Other widgets tetap sama
-  // ----------------------------
+  // ===================== Menu Buttons =====================
+  Widget _buildMenuButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _menuButton(Icons.person, "Hadir", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const KehadiranPage()),
+          );
+        }),
+        _menuButton(Icons.description, "Izin", () {}),
+        _menuButton(Icons.medical_services, "Sakit", () {}),
+        _menuButton(Icons.schedule, "Cuti", () {}),
+      ],
+    );
+  }
 
+  Widget _menuButton(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Color(0xFF36546C),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===================== Schedule Card =====================
   Widget _buildScheduleCard() {
-    /* SAMA */ return Transform.translate(
+    return Transform.translate(
       offset: Offset(0, -50),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -340,55 +409,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMenuButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _menuButton(Icons.person, "Hadir", () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const KehadiranPage()),
-          );
-        }),
-        _menuButton(Icons.description, "Izin", () {}),
-        _menuButton(Icons.medical_services, "Sakit", () {}),
-        _menuButton(Icons.schedule, "Cuti", () {}),
-      ],
-    );
-  }
-
-  Widget _menuButton(IconData icon, String title, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Color(0xFF36546C),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 26),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ===================== Aktivitas Chart =====================
   Widget _buildAktivitasChart() {
-    /* SAMA */ return Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,12 +447,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ===================== Detail Bar =====================
   Widget _buildDetailBar({
     required String title,
     required double value,
     required Color color,
   }) {
-    /* SAMA */ return Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,32 +489,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  Widget _bottomItem(IconData icon, String label, bool active) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: active ? Color(0xFF36546C) : Colors.grey[400],
-            size: 26,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: active ? Color(0xFF36546C) : Colors.grey[400],
-              fontSize: 11,
-              fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class DonutChartPainter extends CustomPainter {
@@ -517,7 +515,6 @@ class DonutChartPainter extends CustomPainter {
     for (int i = 0; i < values.length; i++) {
       paint.color = colors[i];
       final sweepAngle = values[i] * 2 * 3.14159;
-
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,
@@ -525,7 +522,6 @@ class DonutChartPainter extends CustomPainter {
         false,
         paint,
       );
-
       startAngle += sweepAngle;
     }
 
