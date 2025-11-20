@@ -13,6 +13,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
   bool _hasPermission = false;
   bool _isLoading = true;
   bool _isProcessing = false;
+  Rect? _barcodeRect;
+  Size? _cameraSize;
 
   final MobileScannerController controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
@@ -47,6 +49,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
   }
 
   void _showScanResult(String result) {
+    setState(() {
+      _barcodeRect = null;
+    });
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -143,25 +149,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("Scan QR Code"),
-        backgroundColor: const Color(0xFF36546C),
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.flash_on),
-            onPressed: () => controller.toggleTorch(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.flip_camera_ios),
-            onPressed: () => controller.switchCamera(),
-          ),
-        ],
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : _hasPermission
@@ -171,99 +158,258 @@ class _QRScannerPageState extends State<QRScannerPage> {
   }
 
   Widget _buildScanner() {
-    return Column(
+    return Stack(
       children: [
-        Expanded(
-          flex: 5,
-          child: Stack(
-            children: [
-              MobileScanner(
-                controller: controller,
-                onDetect: (capture) {
-                  final barcode = capture.barcodes.first;
-                  final String? data = barcode.rawValue;
+        // Background Scanner (camera feed)
+        MobileScanner(
+          controller: controller,
+          onDetect: (capture) {
+            final barcode = capture.barcodes.first;
+            final String? data = barcode.rawValue;
 
-                  if (!_isProcessing && data != null) {
-                    setState(() => _isProcessing = true);
-                    controller.stop();
-                    _showScanResult(data);
-                  }
-                },
+            // Update posisi dan ukuran kotak sesuai barcode
+            if (barcode.corners != null && barcode.corners!.isNotEmpty) {
+              final corners = barcode.corners!;
+              
+              double minX = corners[0].dx;
+              double maxX = corners[0].dx;
+              double minY = corners[0].dy;
+              double maxY = corners[0].dy;
+
+              for (var corner in corners) {
+                if (corner.dx < minX) minX = corner.dx;
+                if (corner.dx > maxX) maxX = corner.dx;
+                if (corner.dy < minY) minY = corner.dy;
+                if (corner.dy > maxY) maxY = corner.dy;
+              }
+
+              setState(() {
+                _barcodeRect = Rect.fromLTRB(minX, minY, maxX, maxY);
+              });
+            }
+
+            if (!_isProcessing && data != null) {
+              setState(() => _isProcessing = true);
+              controller.stop();
+              _showScanResult(data);
+            }
+          },
+        ),
+
+        // Kotak putih dinamis yang muncul saat ada barcode
+        if (_barcodeRect != null && !_isProcessing)
+          Positioned(
+            left: _barcodeRect!.left,
+            top: _barcodeRect!.top,
+            child: Container(
+              width: _barcodeRect!.width,
+              height: _barcodeRect!.height,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.white,
+                  width: 3,
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-
-              // Kotak merah
-              Center(
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.7,
-                  height: MediaQuery.of(context).size.width * 0.7,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: const Color(0xFFE75636),
-                      width: 4,
+              child: Stack(
+                children: [
+                  // Corner bracket kiri atas
+                  Positioned(
+                    top: -2,
+                    left: -2,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.white, width: 5),
+                          left: BorderSide(color: Colors.white, width: 5),
+                        ),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  // Corner bracket kanan atas
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.white, width: 5),
+                          right: BorderSide(color: Colors.white, width: 5),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Corner bracket kiri bawah
+                  Positioned(
+                    bottom: -2,
+                    left: -2,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.white, width: 5),
+                          left: BorderSide(color: Colors.white, width: 5),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Corner bracket kanan bawah
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.white, width: 5),
+                          right: BorderSide(color: Colors.white, width: 5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // UI Overlay
+        Column(
+          children: [
+            // Header
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
               ),
+            ),
 
-              if (_isProcessing)
-                Container(
-                  color: Colors.black54,
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
+            // Title
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                "Scan QR Code",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
                 ),
-            ],
-          ),
-        ),
-
-        // 🔥 Footer yang sudah diperbaiki tampilannya
-        Expanded(
-          flex: 2,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF36546C),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.qr_code_scanner, color: Colors.white, size: 36),
-                SizedBox(height: 14),
-                Text(
-                  "Arahkan kamera ke QR code",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+
+            const Spacer(flex: 3),
+
+            // Text description
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                "Pindahkan Kode QR untuk Absensi",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Button Batal
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE75636),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    "Batal",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                SizedBox(height: 6),
-                Text(
-                  "Posisikan QR code di dalam frame",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ],
+        ),
+
+        // Processing overlay
+        if (_isProcessing)
+          Container(
+            color: Colors.black87,
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
             ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildPermissionDenied() {
-    return const Center(
-      child: Text("Izin Kamera Ditolak.", style: TextStyle(color: Colors.white)),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.camera_alt_outlined, size: 80, color: Colors.white54),
+          const SizedBox(height: 20),
+          const Text(
+            "Izin Kamera Ditolak",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              "Aplikasi memerlukan akses kamera untuk memindai QR code",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            onPressed: () {
+              openAppSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE75636),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              "Buka Pengaturan",
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
