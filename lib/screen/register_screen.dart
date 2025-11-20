@@ -17,11 +17,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController passwordController = TextEditingController();
   bool showPassword = false;
 
+<<<<<<< Updated upstream
   int _selectedIndex = 1; // aktif tab Register
 
   // 👉 Tambahan: Role Dropdown
   String? selectedRole;
 
+=======
+  int _selectedIndex = 1;
+
+  String? selectedRole;
+
+>>>>>>> Stashed changes
   Future<void> registerUser() async {
     if (selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,7 +38,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     try {
-      // Membuat akun Firebase Auth
       UserCredential cred =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -40,7 +46,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       User? user = cred.user;
 
+<<<<<<< Updated upstream
       // 👉 Menyimpan data tambahan ke Firestore
+=======
+>>>>>>> Stashed changes
       await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
         "uid": user.uid,
         "name": nameController.text.trim(),
@@ -52,6 +61,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registrasi Berhasil")),
       );
+<<<<<<< Updated upstream
+=======
+
+      // WAJIB AGAR TIDAK MASUK HOMEPAGE
+      await FirebaseAuth.instance.signOut();
+
+      // 🔥 Pindah ke halaman Sign In
+      widget.onSignInTap();
+>>>>>>> Stashed changes
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
@@ -180,7 +198,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  // 👉 ROLE DROPDOWN
+                  // ROLE DROPDOWN
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Container(
@@ -209,11 +227,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: DropdownButton<String>(
                                 value: selectedRole,
                                 isExpanded: true,
-                                hint: const Text(
-                                  "Role",
-                                  style: TextStyle(
-                                      fontSize: 16, color: Colors.grey),
-                                ),
+                                hint: const Text("Role",
+                                    style: TextStyle(
+                                        fontSize: 16, color: Colors.grey)),
                                 items: const [
                                   DropdownMenuItem(
                                     value: "karyawan",
@@ -267,46 +283,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
 
                   const SizedBox(height: 35),
-
-                  Row(
-                    children: const [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text("Or Sign Up With"),
-                      ),
-                      Expanded(child: Divider()),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _socialButton("assets/google.png", "Google", () {}),
-                      const SizedBox(width: 20),
-                      _socialButton("assets/facebook.png", "Facebook", () {}),
-                    ],
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Already Have Account? "),
-                      GestureDetector(
-                        onTap: widget.onSignInTap,
-                        child: const Text(
-                          "Sign In",
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -358,27 +334,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onPressed: () => setState(() => showPassword = !showPassword),
                 )
               : null,
-        ),
-      ),
-    );
-  }
-
-  Widget _socialButton(String icon, String label, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
-            Image.asset(icon, width: 24),
-            const SizedBox(width: 10),
-            Text(label),
-          ],
         ),
       ),
     );
