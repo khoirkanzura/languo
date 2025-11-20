@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../screen/qr_scanner_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,6 +9,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String? _lastScannedData;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,6 +24,7 @@ class _HomePageState extends State<HomePage> {
               _buildHeader(),
               _buildScheduleCard(),
               const SizedBox(height: 20),
+              if (_lastScannedData != null) _buildScanResultInfo(),
               _buildMenuButtons(),
               const SizedBox(height: 20),
               _buildAktivitasChart(),
@@ -50,7 +53,131 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ================= HEADER =================
+  Widget _buildScanResultInfo() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 24),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Scan Berhasil",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[800],
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    _lastScannedData!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green[700],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.close, size: 20),
+              onPressed: () {
+                setState(() => _lastScannedData = null);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        Container(
+          height: 70,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _bottomItem(Icons.home, "Beranda", true),
+              SizedBox(width: 80),
+              _bottomItem(Icons.person_outline, "Profile", false),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -30,
+          child: GestureDetector(
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRScannerPage(),
+                ),
+              );
+              
+              if (result != null) {
+                setState(() {
+                  _lastScannedData = result;
+                });
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("QR Code berhasil dipindai!"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Color(0xFF36546C),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+                border: Border.all(color: Colors.white, width: 4),
+              ),
+              child: Center(
+                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -119,7 +246,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ================= SCHEDULE CARD =================
   Widget _buildScheduleCard() {
     return Transform.translate(
       offset: Offset(0, -50),
@@ -196,7 +322,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ================= MENU =================
   Widget _buildMenuButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -236,7 +361,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ================= AKTIVITAS (DONUT CHART) =================
   Widget _buildAktivitasChart() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -274,7 +398,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ================= DETAIL BAR =================
   Widget _buildDetailBar({
     required String title,
     required double value,
@@ -314,69 +437,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-    );
-  }
-
-  // ================= BOTTOM NAV =================
-  Widget _buildBottomNav() {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        Container(
-          height: 70,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _bottomItem(Icons.home, "Beranda", true),
-              SizedBox(width: 80),
-              _bottomItem(Icons.person_outline, "Profile", false),
-            ],
-          ),
-        ),
-
-        // Floating QR Button
-        Positioned(
-          top: -30,
-          child: GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("QR Scanner")),
-              );
-            },
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: Color(0xFF36546C),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-                border: Border.all(color: Colors.white, width: 4),
-              ),
-              child: Center(
-                child:
-                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
