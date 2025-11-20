@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screen/qr_scanner_screen.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -139,12 +140,12 @@ class _HomePageState extends State<HomePage> {
                   builder: (context) => QRScannerPage(),
                 ),
               );
-              
+
               if (result != null) {
                 setState(() {
                   _lastScannedData = result;
                 });
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("QR Code berhasil dipindai!"),
@@ -169,7 +170,8 @@ class _HomePageState extends State<HomePage> {
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+                child:
+                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
               ),
             ),
           ),
@@ -442,7 +444,14 @@ class _HomePageState extends State<HomePage> {
 
   Widget _bottomItem(IconData icon, String label, bool active) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        if (label == "Profile") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfilePage()),
+          );
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

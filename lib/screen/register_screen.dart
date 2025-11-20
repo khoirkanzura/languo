@@ -18,10 +18,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool showPassword = false;
 
   int _selectedIndex = 1; // aktif tab Register
+  String? selectedRole; // dropdown role
 
-  // 👉 Tambahan: Role Dropdown
-  String? selectedRole;
-
+  // =====================================================
+  //  🔥 REGISTER USER (versi fix)
+  // =====================================================
   Future<void> registerUser() async {
     if (selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -40,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       User? user = cred.user;
 
-      // 👉 Menyimpan data tambahan ke Firestore
+      // Simpan data user ke Firestore
       await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
         "uid": user.uid,
         "name": nameController.text.trim(),
@@ -49,9 +50,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         "created_at": FieldValue.serverTimestamp(),
       });
 
+      // ❗ WAJIB: Logout supaya AuthPage tidak langsung redirect ke home
+      await FirebaseAuth.instance.signOut();
+
+      // Notifikasi sukses
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registrasi Berhasil")),
+        const SnackBar(content: Text("Registrasi berhasil, silakan login")),
       );
+
+      // ❗ kembali ke LoginScreen
+      widget.onSignInTap();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
@@ -59,12 +67,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // =====================================================
+  //  UI
+  // =====================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // ================= HEADER =================
+          // HEADER
           Container(
             width: double.infinity,
             height: 160,
@@ -77,7 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 
-          // ================= TAB SWITCHER =================
+          // TAB SWITCHER
           Transform.translate(
             offset: const Offset(0, -45),
             child: Container(
@@ -132,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 
-          // ================= CONTENT =================
+          // CONTENT
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(top: 10),
@@ -148,7 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 25),
 
-                  // NAMA
+                  // Nama
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -158,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  // EMAIL
+                  // Email
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -168,7 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  // PASSWORD
+                  // Password
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -188,21 +199,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-
-                        // ⬇️ Border dibuat sama seperti TextField default
-                        border: Border.all(
-                          color: Colors.grey
-                              .shade600, // ❤️ Sama seperti Nama/Email/Password
-                        ),
-
+                        border: Border.all(color: Colors.grey.shade600),
                         color: Colors.white,
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.person_outline,
-                            color: Colors.black,
-                          ),
+                          const Icon(Icons.person_outline, color: Colors.black),
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonHideUnderline(
@@ -227,10 +229,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 onChanged: (value) {
                                   setState(() => selectedRole = value);
                                 },
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Colors.black,
-                                ),
+                                icon: const Icon(Icons.keyboard_arrow_down,
+                                    color: Colors.black),
                               ),
                             ),
                           ),
@@ -241,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // BUTTON REGISTER FULL WIDTH
+                  // BUTTON REGISTER
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: SizedBox(
@@ -316,7 +316,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // ================= WIDGETS =================
+  // =====================================================
+  // REUSABLE WIDGETS
+  // =====================================================
 
   Widget _tabButton(String text, bool isActive, VoidCallback onTap) {
     return GestureDetector(
