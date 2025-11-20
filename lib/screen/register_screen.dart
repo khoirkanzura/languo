@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function() onSignInTap;
@@ -19,8 +21,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool showPassword = false;
 
   int _selectedIndex = 1; // aktif tab Register
-  String? selectedRole; // role dropdown
+  String? selectedRole;
 
+  // =====================================================
+  // DIPINDAHKAN KE LUAR registerUser (perbaikan error)
+  // =====================================================
+  Future<void> loginGoogle() async {
+    try {
+      final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
+      if (gUser == null) return;
+
+      final gAuth = await gUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: gAuth.accessToken,
+        idToken: gAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Login Google Berhasil")));
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Google Error: $e")));
+    }
+  }
+
+  Future<void> loginFacebook() async {
+    try {
+      final result = await FacebookAuth.instance.login();
+
+      if (result.status == LoginStatus.success) {
+        final credential =
+            FacebookAuthProvider.credential(result.accessToken!.token);
+
+        await FirebaseAuth.instance.signInWithCredential(credential);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Login Facebook Berhasil")));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Facebook login gagal")));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Facebook Error: $e")));
+    }
+  }
+
+  // =====================================================
+  // REGISTER USER
+  // =====================================================
   Future<void> registerUser() async {
     if (selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -196,10 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.person_outline,
-                            color: Colors.black,
-                          ),
+                          const Icon(Icons.person_outline, color: Colors.black),
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonHideUnderline(
@@ -222,10 +271,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 onChanged: (value) {
                                   setState(() => selectedRole = value);
                                 },
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Colors.black,
-                                ),
+                                icon: const Icon(Icons.keyboard_arrow_down,
+                                    color: Colors.black),
                               ),
                             ),
                           ),
@@ -236,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // BUTTON REGISTER FULL WIDTH
+                  // BUTTON REGISTER
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: SizedBox(
@@ -261,7 +308,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 35),
+                  const SizedBox(height: 40),
+
+                  // Divider
+                  Row(
+                    children: const [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text("Or Sign In With"),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _socialButton(
+                        icon: "assets/google.png",
+                        label: "Google",
+                        onTap: loginGoogle,
+                      ),
+                      const SizedBox(width: 20),
+                      _socialButton(
+                        icon: "assets/facebook.png",
+                        label: "Facebook",
+                        onTap: loginFacebook,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't Have Account? "),
+                      GestureDetector(
+                        // ❗ diperbaiki: sebelumnya widget.onRegisterTap (TIDAK ADA)
+                        onTap: widget.onSignInTap,
+                        child: const Text("Register",
+                            style: TextStyle(color: Colors.blue)),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -284,6 +379,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _socialButton({
+    required String icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(icon, width: 24, height: 24),
+            const SizedBox(width: 10),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          ],
         ),
       ),
     );
