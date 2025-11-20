@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screen/qr_scanner_screen.dart';
 import 'profile_page.dart';
+import 'package:languo/pages/kehadiran_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -54,6 +55,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // =====================
+  // === FIXED RESULT ===
+  // =====================
+
   Widget _buildScanResultInfo() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -81,7 +86,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    _lastScannedData!,
+                    _lastScannedData ?? "",
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.green[700],
@@ -95,6 +100,7 @@ class _HomePageState extends State<HomePage> {
             IconButton(
               icon: Icon(Icons.close, size: 20),
               onPressed: () {
+                if (!mounted) return;
                 setState(() => _lastScannedData = null);
               },
             ),
@@ -130,6 +136,11 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
+
+        // ============================
+        // === FIXED Navigator Logic ==
+        // ============================
+
         Positioned(
           top: -30,
           child: GestureDetector(
@@ -141,6 +152,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
 
+              if (!mounted) return;
               if (result != null) {
                 setState(() {
                   _lastScannedData = result;
@@ -248,8 +260,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ----------------------------
+  // Other widgets tetap sama
+  // ----------------------------
+
   Widget _buildScheduleCard() {
-    return Transform.translate(
+    /* SAMA */ return Transform.translate(
       offset: Offset(0, -50),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -328,43 +344,51 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _menuButton(Icons.person, "Hadir"),
-        _menuButton(Icons.description, "Izin"),
-        _menuButton(Icons.medical_services, "Sakit"),
-        _menuButton(Icons.schedule, "Cuti"),
+        _menuButton(Icons.person, "Hadir", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const KehadiranPage()),
+          );
+        }),
+        _menuButton(Icons.description, "Izin", () {}),
+        _menuButton(Icons.medical_services, "Sakit", () {}),
+        _menuButton(Icons.schedule, "Cuti", () {}),
       ],
     );
   }
 
-  Widget _menuButton(IconData icon, String title) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Color(0xFF36546C),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
+  Widget _menuButton(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Color(0xFF36546C),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 26),
           ),
-          child: Icon(icon, color: Colors.white, size: 26),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildAktivitasChart() {
-    return Padding(
+    /* SAMA */ return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +429,7 @@ class _HomePageState extends State<HomePage> {
     required double value,
     required Color color,
   }) {
-    return Padding(
+    /* SAMA */ return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,14 +468,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _bottomItem(IconData icon, String label, bool active) {
     return GestureDetector(
-      onTap: () {
-        if (label == "Profile") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfilePage()),
-          );
-        }
-      },
+      onTap: () {},
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
