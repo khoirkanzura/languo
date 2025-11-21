@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screen/qr_scanner_screen.dart';
+import '../screen/employee_detail_screen.dart'; // Import EmployeeDetailScreen
 import 'profile_page.dart';
 import 'package:languo/pages/kehadiran_page.dart';
 
@@ -141,7 +142,7 @@ class _HomePageState extends State<HomePage> {
         ),
         // QR Floating Button
         Positioned(
-          top: -20, // dikurangi supaya tidak menutupi header
+          top: -20,
           child: GestureDetector(
             onTap: () async {
               final result = await Navigator.push(
@@ -384,7 +385,15 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  // Navigasi ke EmployeeDetailScreen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EmployeeDetailScreen(),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFFE75636),
                   foregroundColor: Colors.white,
