@@ -99,7 +99,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
               setState(() => _isProcessing = false);
               controller.start();
             },
-            child: const Text("Scan Lagi"),
+            child: const Text(
+              "Scan Lagi",
+              style: TextStyle(color: Colors.black),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -107,7 +110,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
               Navigator.pop(context, result);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF36546C),
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              side: const BorderSide(color: Colors.grey, width: 1),
+              elevation: 0,
             ),
             child: const Text("Selesai"),
           ),
