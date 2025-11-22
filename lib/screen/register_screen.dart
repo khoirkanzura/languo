@@ -71,7 +71,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // =====================================================
-  // REGISTER USER
+  // REGISTER USER - DIPERBAIKI
   // =====================================================
   Future<void> registerUser() async {
     if (selectedRole == null) {
@@ -82,33 +82,75 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     try {
+      // Simpan data user sementara
+      final String name = nameController.text.trim();
+      final String email = emailController.text.trim();
+      final String password = passwordController.text.trim();
+      final String role = selectedRole!;
+
+      // Validasi input
+      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Semua field harus diisi")),
+        );
+        return;
+      }
+
+      // Buat user baru
       UserCredential cred =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
+        email: email,
+        password: password,
       );
 
       User? user = cred.user;
 
+      // Simpan data ke Firestore
       await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
         "uid": user.uid,
-        "name": nameController.text.trim(),
-        "email": emailController.text.trim(),
-        "role": selectedRole,
+        "name": name,
+        "email": email,
+        "role": role,
         "created_at": FieldValue.serverTimestamp(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registrasi Berhasil")),
-      );
-
+      // PENTING: Sign out user yang baru dibuat SEBELUM navigasi
       await FirebaseAuth.instance.signOut();
 
-      widget.onSignInTap();
+      // Tunggu sebentar untuk memastikan sign out selesai
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Clear form
+      nameController.clear();
+      emailController.clear();
+      passwordController.clear();
+
+      if (mounted) {
+        setState(() {
+          selectedRole = null;
+        });
+
+        // Pindah ke halaman Sign In SETELAH sign out
+        widget.onSignInTap();
+
+        // Tampilkan pesan sukses SETELAH navigasi
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Registrasi Berhasil! Silakan login."),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
@@ -348,7 +390,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       const Text("Don't Have Account? "),
                       GestureDetector(
-                        // ❗ diperbaiki: sebelumnya widget.onRegisterTap (TIDAK ADA)
                         onTap: widget.onSignInTap,
                         child: const Text("Register",
                             style: TextStyle(color: Colors.blue)),
@@ -364,6 +405,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   // ================= WIDGETS =================

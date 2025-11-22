@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Presensi App',
+      title: 'Languo SIAKU',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
