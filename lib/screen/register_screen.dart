@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
@@ -19,13 +18,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   bool showPassword = false;
+  bool isLoading = false;
 
-  int _selectedIndex = 1; // aktif tab Register
+  int _selectedIndex = 1;
   String? selectedRole;
 
-  // =====================================================
-  // DIPINDAHKAN KE LUAR registerUser (perbaikan error)
-  // =====================================================
+  //  REGISTER USER
+  Future<void> registerUser() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email dan password tidak boleh kosong.")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      await FirebaseAuth.instance.signOut();
+      widget.onSignInTap();
+
+      Future.microtask(() {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Registrasi berhasil! Silakan login."),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      });
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? "Terjadi kesalahan saat registrasi"),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  //  LOGIN GOOGLE
   Future<void> loginGoogle() async {
     try {
       final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
@@ -48,6 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  //  LOGIN FACEBOOK
   Future<void> loginFacebook() async {
     try {
       final result = await FacebookAuth.instance.login();
@@ -59,10 +100,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await FirebaseAuth.instance.signInWithCredential(credential);
 
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Login Facebook Berhasil")));
+          const SnackBar(content: Text("Login Facebook Berhasil")),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Facebook login gagal")));
+          const SnackBar(content: Text("Facebook login gagal")),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -70,96 +113,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // =====================================================
-  // REGISTER USER - DIPERBAIKI
-  // =====================================================
-  Future<void> registerUser() async {
-    if (selectedRole == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Pilih Role terlebih dahulu")),
-      );
-      return;
-    }
-
-    try {
-      // Simpan data user sementara
-      final String name = nameController.text.trim();
-      final String email = emailController.text.trim();
-      final String password = passwordController.text.trim();
-      final String role = selectedRole!;
-
-      // Validasi input
-      if (name.isEmpty || email.isEmpty || password.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Semua field harus diisi")),
-        );
-        return;
-      }
-
-      // Buat user baru
-      UserCredential cred =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      User? user = cred.user;
-
-      // Simpan data ke Firestore
-      await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
-        "uid": user.uid,
-        "name": name,
-        "email": email,
-        "role": role,
-        "created_at": FieldValue.serverTimestamp(),
-      });
-
-      // PENTING: Sign out user yang baru dibuat SEBELUM navigasi
-      await FirebaseAuth.instance.signOut();
-
-      // Tunggu sebentar untuk memastikan sign out selesai
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Clear form
-      nameController.clear();
-      emailController.clear();
-      passwordController.clear();
-
-      if (mounted) {
-        setState(() {
-          selectedRole = null;
-        });
-
-        // Pindah ke halaman Sign In SETELAH sign out
-        widget.onSignInTap();
-
-        // Tampilkan pesan sukses SETELAH navigasi
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Registrasi Berhasil! Silakan login."),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
-      }
-    }
-  }
-
+  //  TAMPILAN UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // ================= HEADER =================
           Container(
             width: double.infinity,
             height: 160,
@@ -172,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 
-          // ================= TAB SWITCHER =================
+          // TAB SWITCHER
           Transform.translate(
             offset: const Offset(0, -45),
             child: Container(
@@ -227,7 +186,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 
-          // ================= CONTENT =================
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(top: 10),
@@ -242,8 +200,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
 
                   const SizedBox(height: 25),
-
-                  // NAMA
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -253,7 +209,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  // EMAIL
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -263,7 +218,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
 
-                  // PASSWORD
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _inputField(
@@ -283,9 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey.shade600,
-                        ),
+                        border: Border.all(color: Colors.grey.shade600),
                         color: Colors.white,
                       ),
                       child: Row(
@@ -325,13 +277,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 20),
 
-                  // BUTTON REGISTER
+                  // REGISTER BUTTON
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: registerUser,
+                        onPressed: isLoading ? null : registerUser,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           backgroundColor: const Color(0xFF2B3541),
@@ -339,20 +291,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "Register",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 40),
 
-                  // Divider
                   Row(
                     children: const [
                       Expanded(child: Divider()),
@@ -388,11 +344,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't Have Account? "),
+                      const Text("Sudah punya akun? "),
                       GestureDetector(
                         onTap: widget.onSignInTap,
-                        child: const Text("Register",
-                            style: TextStyle(color: Colors.blue)),
+                        child: const Text(
+                          "Sign In",
+                          style: TextStyle(color: Colors.blue),
+                        ),
                       ),
                     ],
                   ),
@@ -407,16 +365,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  // ================= WIDGETS =================
-
+  //  GOOGLE DAN FACEBOOK
   Widget _tabButton(String text, bool isActive, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -460,9 +409,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             Image.asset(icon, width: 24, height: 24),
             const SizedBox(width: 10),
-            Text(label,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
@@ -496,5 +446,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 }
