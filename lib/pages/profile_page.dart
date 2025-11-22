@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../screen/qr_scanner_screen.dart';
 import 'home_page.dart';
-import '../screen/login_screen.dart';
+import 'auth_page.dart';
+// removed unused direct Login/Register imports — AuthPage will handle routing
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -13,7 +16,7 @@ class ProfilePage extends StatelessWidget {
       bottomNavigationBar: _buildBottomNav(context),
       body: Column(
         children: [
-          // HEADER BIRU
+          // ================= HEADER ====================
           Container(
             width: double.infinity,
             height: 160,
@@ -25,9 +28,9 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             child: Column(
-              children: [
-                const SizedBox(height: 20),
-                const Text(
+              children: const [
+                SizedBox(height: 20),
+                Text(
                   "Profile",
                   style: TextStyle(
                     color: Colors.white,
@@ -35,10 +38,8 @@ class ProfilePage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // AVATAR
-                const CircleAvatar(
+                SizedBox(height: 20),
+                CircleAvatar(
                   radius: 45,
                   backgroundColor: Colors.white,
                   child: CircleAvatar(
@@ -52,7 +53,7 @@ class ProfilePage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // NAMA DAN ROLE
+          // ================= USER INFO ====================
           const Text(
             "Khoir Karol N",
             style: TextStyle(
@@ -66,13 +67,13 @@ class ProfilePage extends StatelessWidget {
             "Karyawan",
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: Colors.grey,
             ),
           ),
 
           const SizedBox(height: 25),
 
-          // MENU
+          // ================= MENU LIST ===================
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -83,16 +84,17 @@ class ProfilePage extends StatelessWidget {
                 _menuItem(Icons.help_outline, "FAQ"),
                 const SizedBox(height: 20),
 
-                // LOGOUT BUTTON FIXED
+                // ===================== LOGOUT ====================
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    // WAJIB! Firebase logout
+                    await FirebaseAuth.instance.signOut();
+
+                    // Kembali ke AuthPage (root) dan biarkan StreamBuilder di AuthPage
+                    // menangani tampilan Login/Register berdasarkan state.
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => LoginScreen(
-                          onRegisterTap: () {}, // FIX: kasih callback kosong
-                        ),
-                      ),
+                      MaterialPageRoute(builder: (_) => const AuthPage()),
                       (route) => false,
                     );
                   },
@@ -112,6 +114,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 80),
               ],
             ),
@@ -121,7 +124,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ========================= MENU ITEM =============================
   Widget _menuItem(IconData icon, String title) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
@@ -132,7 +134,7 @@ class ProfilePage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: Color(0xFF36546C)),
+          Icon(icon, color: const Color(0xFF36546C)),
           const SizedBox(width: 12),
           Text(
             title,
@@ -148,7 +150,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ========================= NAVBAR CUSTOM =============================
+  // ================= NAVIGATION BAR =================
   Widget _buildBottomNav(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
@@ -169,7 +171,6 @@ class ProfilePage extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // HOME
               GestureDetector(
                 onTap: () {
                   Navigator.pushReplacement(
@@ -193,13 +194,10 @@ class ProfilePage extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(width: 80),
-
-              // PROFILE ACTIVE
-              Column(
+              const Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(Icons.person_outline,
                       size: 26, color: Color(0xFF36546C)),
                   SizedBox(height: 4),
@@ -216,8 +214,6 @@ class ProfilePage extends StatelessWidget {
             ],
           ),
         ),
-
-        // QR BUTTON FLOATING
         Positioned(
           top: -30,
           child: GestureDetector(
@@ -242,8 +238,11 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(Icons.qr_code_scanner,
-                  color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.qr_code_scanner,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
           ),
         ),

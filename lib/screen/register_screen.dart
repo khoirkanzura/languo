@@ -44,6 +44,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
       widget.onSignInTap();
 
       Future.microtask(() {
@@ -80,6 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await FirebaseAuth.instance.signInWithCredential(credential);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Login Google Berhasil")));
     } catch (e) {
@@ -99,6 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         await FirebaseAuth.instance.signInWithCredential(credential);
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login Facebook Berhasil")),
         );
