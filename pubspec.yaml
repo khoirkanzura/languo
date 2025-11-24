@@ -25,6 +25,8 @@ dependencies:
   permission_handler: ^11.3.1 
   qr_flutter: ^4.1.0
   cupertino_icons: ^1.0.2
+  image_picker: ^1.2.1
+  firebase_storage: ^13.0.4
 
 
 dev_dependencies:

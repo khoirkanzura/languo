@@ -3,6 +3,7 @@ import '../screen/qr_scanner_screen.dart';
 import '../screen/employee_detail_screen.dart'; // Import EmployeeDetailScreen
 import 'profile_page.dart';
 import 'package:languo/pages/kehadiran_page.dart';
+import 'package:languo/pages/pengajuan_sakit_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,8 +29,11 @@ class _HomePageState extends State<HomePage> {
               _buildScheduleCard(),
               const SizedBox(height: 20),
               if (_lastScannedData != null) _buildScanResultInfo(),
-              _buildMenuButtons(),
-              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: _buildMenuButtons(),
+              ),
+              const SizedBox(height: 40),
               _buildAktivitasChart(),
               const SizedBox(height: 20),
               Padding(
@@ -219,7 +223,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 100),
+      padding: const EdgeInsets.fromLTRB(20, 40, 20, 50),
       decoration: const BoxDecoration(
         color: Color(0xFF36546C),
         borderRadius: BorderRadius.only(
@@ -297,7 +301,39 @@ class _HomePageState extends State<HomePage> {
           );
         }),
         _menuButton(Icons.description, "Izin", () {}),
-        _menuButton(Icons.medical_services, "Sakit", () {}),
+
+        // ============ MENU SAKIT ============
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
+            );
+          },
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF36546C),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.medical_services,
+                    color: Colors.white, size: 26),
+              ),
+              const SizedBox(height: 8),
+              const Text("Sakit", style: TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+
         _menuButton(Icons.schedule, "Cuti", () {}),
       ],
     );
@@ -336,7 +372,7 @@ class _HomePageState extends State<HomePage> {
   // ===================== Schedule Card =====================
   Widget _buildScheduleCard() {
     return Transform.translate(
-      offset: Offset(0, -50),
+      offset: const Offset(0, -30),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
@@ -444,7 +480,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            child: Center(
+            child: IgnorePointer(
+              ignoring: true,
               child: CustomPaint(
                 size: Size(160, 160),
                 painter: DonutChartPainter(),
