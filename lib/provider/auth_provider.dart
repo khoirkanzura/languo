@@ -8,6 +8,7 @@ class AuthProvider with ChangeNotifier {
   final form = GlobalKey<FormState>();
   String enteredEmail = "";
   String enteredPassword = "";
+  String enteredName = "";
 
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
@@ -19,27 +20,32 @@ class AuthProvider with ChangeNotifier {
 
     try {
       if (islogin) {
-        // LOGIN
+        // ===== LOGIN =====
         await _auth.signInWithEmailAndPassword(
           email: enteredEmail,
           password: enteredPassword,
         );
       } else {
-        // REGISTER
+        // ===== REGISTER =====
         UserCredential userCred = await _auth.createUserWithEmailAndPassword(
           email: enteredEmail,
           password: enteredPassword,
         );
 
-        // SIMPAN DATA USER KE FIRESTORE
-        await _firestore.collection('users').doc(userCred.user!.uid).set({
-          'email': enteredEmail,
-          'createdAt': DateTime.now(),
+        final uid = userCred.user!.uid;
+
+        // SAVE USER DOCUMENT MATCHING USERMODEL FORMAT
+        await _firestore.collection('users').doc(uid).set({
+          'user_id': uid,
+          'user_name': enteredName, // Input dari register form
+          'user_email': enteredEmail,
+          'user_role': 'Murid', // default role
+          'user_photo': null,
+          'created_at': Timestamp.now(),
         });
       }
 
-      // Tidak perlu navigate ke Login Screen, biarkan saja
-      notifyListeners();
+      notifyListeners(); // Update UI
     } catch (e) {
       print("Error Auth: $e");
     }

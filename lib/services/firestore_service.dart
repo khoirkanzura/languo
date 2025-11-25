@@ -117,7 +117,7 @@ class FirestoreService {
       if (querySnapshot.docs.isNotEmpty) {
         final doc = querySnapshot.docs.first;
         // Mengirim data map dan UID Firebase (doc.id)
-        return UserModel.fromMap(doc.data(), doc.id);
+        return UserModel.fromFirestore(doc);
       }
       return null;
     } catch (e) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function() onSignInTap;
@@ -25,12 +26,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   //  REGISTER USER
   Future<void> registerUser() async {
+    final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email dan password tidak boleh kosong.")),
+        const SnackBar(content: Text("Semua field harus diisi.")),
       );
       return;
     }
@@ -38,34 +40,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => isLoading = true);
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Membuat akun
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      await FirebaseAuth.instance.signOut();
+      final User? user = userCredential.user;
+
+      // Menyimpan data user di Firestore
+      if (user != null) {
+        await FirebaseAuth.instance.currentUser!.updateDisplayName(name);
+
+        await FirebaseAuth.instance
+            .signOut();
+
+        await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+          "user_id": user.uid,
+          "user_name": name,
+          "user_email": email,
+          "user_role": "Murid",
+          "user_photo": null,
+          "created_at": FieldValue.serverTimestamp(),
+        });
+      }
 
       if (!mounted) return;
       widget.onSignInTap();
 
-      Future.microtask(() {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registrasi berhasil! Silakan login."),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registrasi berhasil! Silakan login.")),
+      );
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? "Terjadi kesalahan saat registrasi"),
-        ),
+        SnackBar(content: Text(e.message ?? "Terjadi kesalahan")),
       );
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
   }
+
 
   //  LOGIN GOOGLE
   Future<void> loginGoogle() async {
@@ -230,52 +245,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: passwordController,
                       obscure: !showPassword,
                       isPassword: true,
-                    ),
-                  ),
-
-                  // ROLE DROPDOWN
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade600),
-                        color: Colors.white,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.person_outline, color: Colors.black),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedRole,
-                                isExpanded: true,
-                                hint: const Text("Role",
-                                    style: TextStyle(
-                                        fontSize: 16, color: Colors.grey)),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: "karyawan",
-                                    child: Text("Karyawan"),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: "murid",
-                                    child: Text("Murid"),
-                                  ),
-                                ],
-                                onChanged: (value) {
-                                  setState(() => selectedRole = value);
-                                },
-                                icon: const Icon(Icons.keyboard_arrow_down,
-                                    color: Colors.black),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
 
