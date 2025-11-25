@@ -4,6 +4,7 @@ import '../screen/employee_detail_screen.dart'; // Import EmployeeDetailScreen
 import 'profile_page.dart';
 import 'package:languo/pages/kehadiran_page.dart';
 import 'package:languo/pages/pengajuan_sakit_page.dart';
+import 'package:languo/pages/pengajuan_cuti_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -334,7 +335,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
 
-        _menuButton(Icons.schedule, "Cuti", () {}),
+        _menuButton(Icons.schedule, "Cuti", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PengajuanCutiPage()),
+          );
+        }),
       ],
     );
   }
