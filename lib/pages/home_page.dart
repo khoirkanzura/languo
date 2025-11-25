@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../screen/qr_scanner_screen.dart';
-import '../screen/employee_detail_screen.dart'; // Import EmployeeDetailScreen
+import '../screen/employee_detail_screen.dart';
 import 'profile_page.dart';
 import 'package:languo/pages/kehadiran_page.dart';
 import 'package:languo/pages/pengajuan_sakit_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user_model.dart';
 import 'package:languo/pages/pengajuan_cuti_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,6 +18,20 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String? _lastScannedData;
+
+  Future<UserModel?> getUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return null;
+
+    return UserModel.fromFirestore(doc);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -222,71 +239,93 @@ class _HomePageState extends State<HomePage> {
 
   // ===================== Header =====================
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 50),
-      decoration: const BoxDecoration(
-        color: Color(0xFF36546C),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "HALLO!",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Khoir Karol N",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Karyawan",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
-            },
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: Colors.white.withOpacity(0.3),
-              child: CircleAvatar(
-                radius: 26,
-                backgroundColor: Colors.grey[300],
-                child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+    return FutureBuilder<UserModel?>(
+      future: getUserData(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container(
+            padding: const EdgeInsets.fromLTRB(20, 40, 20, 50),
+            child: Text("Loading...",
+                style: TextStyle(color: Colors.white, fontSize: 16)),
+            decoration: const BoxDecoration(
+              color: Color(0xFF36546C),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
               ),
             ),
+          );
+        }
+
+        final user = snapshot.data!;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 40, 20, 50),
+          decoration: const BoxDecoration(
+            color: Color(0xFF36546C),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
           ),
-        ],
-      ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "HALLO!",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.userName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user.userRole,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  );
+                },
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.grey[300],
+                    child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

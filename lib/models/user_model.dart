@@ -1,43 +1,46 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {
-  // PENTING: Menggunakan Firebase UID sebagai kunci utama untuk mapping
-  final String uid; 
-  
-  // Field dari ERD: USERS
-  final int userId; // Digunakan sebagai identitas internal (NIM/NIK)
+  final String uid;
   final String userName;
   final String userEmail;
-  final String userRole; // Misalnya: 'Operator', 'Peserta'
-  final String? userPhoto; // Optional
+  final String userRole;
+  final String? userPhoto;
+  final DateTime createdAt;
 
   UserModel({
     required this.uid,
-    required this.userId,
     required this.userName,
     required this.userEmail,
     required this.userRole,
     this.userPhoto,
-  });
+  DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
-  // Fungsi untuk mengkonversi model Dart ke format Map (Firestore)
+  /// Convert Model -> Firestore
   Map<String, dynamic> toMap() {
     return {
-      'user_id': userId,
+      'user_id': uid,
       'user_name': userName,
       'user_email': userEmail,
       'user_role': userRole,
       'user_photo': userPhoto,
+      "created_at": Timestamp.fromDate(createdAt),
     };
   }
 
-  // Fungsi untuk membuat objek dari data Firestore
-  factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
-    return UserModel(
-      uid: uid,
-      userId: map['user_id'] as int,
-      userName: map['user_name'] as String,
-      userEmail: map['user_email'] as String,
-      userRole: map['user_role'] as String,
-      userPhoto: map['user_photo'] as String?,
-    );
-  }
+  /// Convert Firestore -> Model
+  factory UserModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc) {
+  final data = doc.data()!;
+  
+  return UserModel(
+    uid: doc.id,
+    userName: data['user_name'],
+    userEmail: data['user_email'],
+    userRole: data['user_role'],
+    userPhoto: data['user_photo'],
+  );
+}
+
 }

@@ -1,125 +1,155 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../screen/qr_scanner_screen.dart';
 import 'home_page.dart';
 import 'auth_page.dart';
-// removed unused direct Login/Register imports — AuthPage will handle routing
+import '../models/user_model.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  Future<UserModel?> getUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return null;
+
+    return UserModel.fromFirestore(doc);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       bottomNavigationBar: _buildBottomNav(context),
-      body: Column(
-        children: [
-          // ================= HEADER ====================
-          Container(
-            width: double.infinity,
-            height: 160,
-            decoration: const BoxDecoration(
-              color: Color(0xFF36546C),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
+
+      body: FutureBuilder<UserModel?>(
+        future: getUserData(),
+        builder: (context, snapshot) {
+          
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text("Data user tidak ditemukan"));
+          }
+
+          final user = snapshot.data!;
+
+          return Column(
+            children: [
+              // ================= HEADER ====================
+              Container(
+                width: double.infinity,
+                height: 160,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF36546C),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Profile",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    CircleAvatar(
+                      radius: 45,
+                      backgroundColor: Colors.white,
+                      child: CircleAvatar(
+                        radius: 43,
+                        backgroundImage:
+                            user.userPhoto != null ? NetworkImage(user.userPhoto!) : null,
+                        backgroundColor: Colors.grey.shade400,
+                        child:
+                            user.userPhoto == null ? const Icon(Icons.person, size: 40, color: Colors.white) : null,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: Column(
-              children: const [
-                SizedBox(height: 20),
-                Text(
-                  "Profile",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+
+              const SizedBox(height: 20),
+
+              // ================= USER INFO ====================
+              Text(
+                user.userName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF36546C),
                 ),
-                SizedBox(height: 20),
-                CircleAvatar(
-                  radius: 45,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 43,
-                    backgroundColor: Colors.grey,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                user.userRole,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          const SizedBox(height: 20),
+              const SizedBox(height: 25),
 
-          // ================= USER INFO ====================
-          const Text(
-            "Khoir Karol N",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF36546C),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Karyawan",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
+              // ================= MENU LIST ===================
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  children: [
+                    _menuItem(Icons.edit, "Edit Profil"),
+                    _menuItem(Icons.notifications, "Notifikasi"),
+                    _menuItem(Icons.settings, "Pengaturan"),
+                    _menuItem(Icons.help_outline, "FAQ"),
+                    const SizedBox(height: 20),
 
-          const SizedBox(height: 25),
-
-          // ================= MENU LIST ===================
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              children: [
-                _menuItem(Icons.edit, "Edit Profil"),
-                _menuItem(Icons.notifications, "Notifikasi"),
-                _menuItem(Icons.settings, "Pengaturan"),
-                _menuItem(Icons.help_outline, "FAQ"),
-                const SizedBox(height: 20),
-
-                // ===================== LOGOUT ====================
-                ElevatedButton(
-                  onPressed: () async {
-                    // WAJIB! Firebase logout
-                    await FirebaseAuth.instance.signOut();
-
-                    // Kembali ke AuthPage (root) dan biarkan StreamBuilder di AuthPage
-                    // menangani tampilan Login/Register berdasarkan state.
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AuthPage()),
-                      (route) => false,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    // ===================== LOGOUT ====================
+                    ElevatedButton(
+                      onPressed: () async {
+                        await FirebaseAuth.instance.signOut();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AuthPage()),
+                          (route) => false,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Log Out",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    "Log Out",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                    const SizedBox(height: 80),
+                  ],
                 ),
-
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -150,7 +180,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ================= NAVIGATION BAR =================
   Widget _buildBottomNav(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
