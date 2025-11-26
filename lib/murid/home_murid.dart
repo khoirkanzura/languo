@@ -7,16 +7,17 @@ import 'package:languo/pages/pengajuan_sakit_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
+import 'package:languo/pages/pengajuan_izin_page.dart';
+import 'package:languo/pages/rekapan_izin_page.dart';
 
 class HomeMurid extends StatefulWidget {
   const HomeMurid({super.key});
 
   @override
-  State<HomeMurid> createState() => _HomeMuridState(); // FIX
+  State<HomeMurid> createState() => _HomeMuridState();
 }
 
 class _HomeMuridState extends State<HomeMurid> {
-  // FIX
   String? _lastScannedData;
 
   Future<UserModel?> getUserData() async {
@@ -163,7 +164,7 @@ class _HomeMuridState extends State<HomeMurid> {
           ),
         ),
 
-        // Floating Button
+        // Floating QR Button
         Positioned(
           top: -20,
           child: GestureDetector(
@@ -336,48 +337,54 @@ class _HomeMuridState extends State<HomeMurid> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+        // HADIR
         _menuButton(Icons.person, "Hadir", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const KehadiranPage()),
           );
         }),
-        _menuButton(Icons.description, "Izin", () {}),
-        GestureCreatorMenu(),
-      ],
-    );
-  }
 
-  Widget GestureCreatorMenu() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
-        );
-      },
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF36546C),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+        // ========== IZIN (FIXED) ==========
+        _menuButton(Icons.description, "Izin", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
+          );
+        }),
+
+        // SAKIT
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
+            );
+          },
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF36546C),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(Icons.medical_services,
-                color: Colors.white, size: 26),
+                child: const Icon(Icons.medical_services,
+                    color: Colors.white, size: 26),
+              ),
+              const SizedBox(height: 8),
+              const Text("Sakit", style: TextStyle(fontSize: 12)),
+            ],
           ),
-          const SizedBox(height: 8),
-          const Text("Sakit", style: TextStyle(fontSize: 12)),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
