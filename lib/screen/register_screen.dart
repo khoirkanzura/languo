@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function() onSignInTap;
@@ -24,7 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _selectedIndex = 1;
   String? selectedRole;
 
-  //  REGISTER USER
+  // REGISTER USER
   Future<void> registerUser() async {
     final name = nameController.text.trim();
     final email = emailController.text.trim();
@@ -40,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => isLoading = true);
 
     try {
-      // Membuat akun
+      // Membuat akun Firebase Auth
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
@@ -49,21 +51,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final User? user = userCredential.user;
 
-      // Menyimpan data user di Firestore
+      final String hashedPassword = hashPassword(password);
+
       if (user != null) {
         await FirebaseAuth.instance.currentUser!.updateDisplayName(name);
 
-        await FirebaseAuth.instance
-            .signOut();
-
+        // Simpan data ke Firestore
         await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
           "user_id": user.uid,
           "user_name": name,
           "user_email": email,
           "user_role": "Murid",
           "user_photo": null,
+          "user_password": hashedPassword,
           "created_at": FieldValue.serverTimestamp(),
         });
+
+        // Logout setelah register
+        await FirebaseAuth.instance.signOut();
       }
 
       if (!mounted) return;
@@ -81,6 +86,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  String hashPassword(String password) {
+    return sha256.convert(utf8.encode(password)).toString();
+  }
 
   //  LOGIN GOOGLE
   Future<void> loginGoogle() async {
