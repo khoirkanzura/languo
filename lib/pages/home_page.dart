@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import 'package:languo/pages/pengajuan_cuti_page.dart';
+import 'package:languo/pages/pengajuan_izin_page.dart';
+import 'package:languo/pages/rekapan_izin_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -162,7 +164,8 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        // QR Floating Button
+
+        // Floating QR Button
         Positioned(
           top: -20,
           child: GestureDetector(
@@ -200,8 +203,7 @@ class _HomePageState extends State<HomePage> {
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child:
-                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
               ),
             ),
           ),
@@ -334,15 +336,24 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+
+        // HADIR
         _menuButton(Icons.person, "Hadir", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const KehadiranPage()),
           );
         }),
-        _menuButton(Icons.description, "Izin", () {}),
 
-        // ============ MENU SAKIT ============
+        // ========== IZIN (FIXED) ==========
+        _menuButton(Icons.description, "Izin", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
+          );
+        }),
+
+        // SAKIT
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -365,8 +376,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.medical_services,
-                    color: Colors.white, size: 26),
+                child:
+                    const Icon(Icons.medical_services, color: Colors.white, size: 26),
               ),
               const SizedBox(height: 8),
               const Text("Sakit", style: TextStyle(fontSize: 12)),
@@ -374,6 +385,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
 
+        // CUTI
         _menuButton(Icons.schedule, "Cuti", () {
           Navigator.push(
             context,
@@ -467,7 +479,6 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  // Navigasi ke EmployeeDetailScreen
                   Navigator.push(
                     context,
                     MaterialPageRoute(
