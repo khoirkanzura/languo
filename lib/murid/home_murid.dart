@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 import '../screen/qr_scanner_screen.dart';
 import '../screen/employee_detail_screen.dart';
-import 'profile_page.dart';
+import '../pages/profile_page.dart';
 import 'package:languo/pages/kehadiran_page.dart';
 import 'package:languo/pages/pengajuan_sakit_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
-import 'package:languo/pages/pengajuan_cuti_page.dart';
-import 'package:languo/pages/pengajuan_izin_page.dart';
-import 'package:languo/pages/rekapan_izin_page.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeMurid extends StatefulWidget {
+  const HomeMurid({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeMurid> createState() => _HomeMuridState(); // FIX
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomeMuridState extends State<HomeMurid> {
+  // FIX
   String? _lastScannedData;
 
   Future<UserModel?> getUserData() async {
@@ -165,7 +163,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
 
-        // Floating QR Button
+        // Floating Button
         Positioned(
           top: -20,
           child: GestureDetector(
@@ -203,7 +201,8 @@ class _HomePageState extends State<HomePage> {
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+                child:
+                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
               ),
             ),
           ),
@@ -320,7 +319,8 @@ class _HomePageState extends State<HomePage> {
                   child: CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey[300],
-                    child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+                    child:
+                        Icon(Icons.person, color: Colors.grey[600], size: 32),
                   ),
                 ),
               ),
@@ -336,63 +336,48 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-
-        // HADIR
         _menuButton(Icons.person, "Hadir", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const KehadiranPage()),
           );
         }),
-
-        // ========== IZIN (FIXED) ==========
-        _menuButton(Icons.description, "Izin", () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
-          );
-        }),
-
-        // SAKIT
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
-            );
-          },
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF36546C),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child:
-                    const Icon(Icons.medical_services, color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 8),
-              const Text("Sakit", style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-
-        // CUTI
-        _menuButton(Icons.schedule, "Cuti", () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PengajuanCutiPage()),
-          );
-        }),
+        _menuButton(Icons.description, "Izin", () {}),
+        GestureCreatorMenu(),
       ],
+    );
+  }
+
+  Widget GestureCreatorMenu() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
+        );
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF36546C),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.medical_services,
+                color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 8),
+          const Text("Sakit", style: TextStyle(fontSize: 12)),
+        ],
+      ),
     );
   }
 

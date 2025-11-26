@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // ================= HEADER =================
           Container(
             width: double.infinity,
-            height: 160, // <-- tinggi diperkecil agar tab lebih dekat
+            height: 150,
             decoration: const BoxDecoration(
               color: Color(0xFF36546C),
               borderRadius: BorderRadius.only(
@@ -97,64 +97,70 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-// ================= TAB SWITCHER FIXED =================
+          // ================= TAB SWITCHER =================
           Transform.translate(
-            offset: const Offset(0, -45), // <-- geser lebih ke atas
-            child: Container(
-              height: 55,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(40),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  double tabWidth = constraints.maxWidth / 2;
+            offset: const Offset(0, -40),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                height: 55,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    double tabWidth = constraints.maxWidth / 2;
 
-                  return Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                        left: _selectedIndex == 0 ? 0 : tabWidth,
-                        child: Container(
-                          height: 55,
-                          width: tabWidth,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Colors.deepOrange, Colors.redAccent],
-                            ),
-                            borderRadius: BorderRadius.circular(40),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.deepOrange.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                    return Stack(
+                      children: [
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          left: _selectedIndex == 0 ? 0 : tabWidth,
+                          child: Container(
+                            height: 55,
+                            width: tabWidth,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Colors.deepOrange, Colors.redAccent],
                               ),
-                            ],
+                              borderRadius: BorderRadius.circular(40),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.deepOrange.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child:
-                                _tabButton("Sign In", _selectedIndex == 0, () {
-                              setState(() => _selectedIndex = 0);
-                            }),
-                          ),
-                          Expanded(
-                            child:
-                                _tabButton("Register", _selectedIndex == 1, () {
-                              setState(() => _selectedIndex = 1);
-                              widget.onRegisterTap();
-                            }),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _tabButton(
+                                "Sign In",
+                                _selectedIndex == 0,
+                                () => setState(() => _selectedIndex = 0),
+                              ),
+                            ),
+                            Expanded(
+                              child: _tabButton(
+                                "Register",
+                                _selectedIndex == 1,
+                                () {
+                                  setState(() => _selectedIndex = 1);
+                                  widget.onRegisterTap();
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -162,9 +168,10 @@ class _LoginScreenState extends State<LoginScreen> {
           // ================= CONTENT =================
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
+                  const SizedBox(height: 10),
                   const Text(
                     "Selamat Datang!",
                     style: TextStyle(
@@ -175,57 +182,47 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 25),
 
-                  // Input email
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _inputField(
-                      icon: Icons.email_outlined,
-                      hint: "Email",
-                      controller: emailController,
-                    ),
+                  _inputField(
+                    icon: Icons.email_outlined,
+                    hint: "Email",
+                    controller: emailController,
                   ),
 
-                  // Input password
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _inputField(
-                      icon: Icons.lock_outline,
-                      hint: "Password",
-                      controller: passwordController,
-                      obscure: !showPassword,
-                      isPassword: true,
-                    ),
+                  _inputField(
+                    icon: Icons.lock_outline,
+                    hint: "Password",
+                    controller: passwordController,
+                    obscure: !showPassword,
+                    isPassword: true,
                   ),
 
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 20),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: loginUser,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: const Color(0xFF2B3541),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
+                  // BUTTON LOGIN
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: loginUser,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFF2B3541),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                      ),
+                      child: const Text(
+                        "Login",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                     ),
                   ),
 
-                  // Tambahkan jarak lebih besar di atas divider
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 35),
+
                   // Divider
                   Row(
                     children: const [
@@ -240,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Social login
+                  // SOCIAL BUTTONS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -274,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -289,9 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _tabButton(String text, bool isActive, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 55,
-        alignment: Alignment.center,
+      child: Center(
         child: Text(
           text,
           style: TextStyle(
@@ -331,9 +326,13 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Image.asset(icon, width: 24, height: 24),
             const SizedBox(width: 10),
-            Text(label,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

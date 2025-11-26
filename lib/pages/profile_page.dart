@@ -1,156 +1,264 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../screen/qr_scanner_screen.dart';
 import 'home_page.dart';
 import 'auth_page.dart';
-// removed unused direct Login/Register imports — AuthPage will handle routing
+import '../models/user_model.dart';
+import '../screen/edit_profile.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  Future<UserModel?> getUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return null;
+
+    return UserModel.fromFirestore(doc);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       bottomNavigationBar: _buildBottomNav(context),
-      body: Column(
-        children: [
-          // ================= HEADER ====================
-          Container(
-            width: double.infinity,
-            height: 160,
-            decoration: const BoxDecoration(
-              color: Color(0xFF36546C),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
+      body: FutureBuilder<UserModel?>(
+        future: getUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(child: Text("Data user tidak ditemukan"));
+          }
+
+          final user = snapshot.data!;
+
+          return Column(
+            children: [
+              // Header dengan background
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 160,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF36546C),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                    ),
+                    child: SafeArea(
+                      bottom: false,
+                      child: Stack(
+                        children: [
+                          // Decorative pattern
+                          Positioned(
+                            right: 20,
+                            top: 20,
+                            child: Icon(
+                              Icons.menu_book_rounded,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                          ),
+                          Column(
+                            children: [
+                              const SizedBox(height: 20),
+                              const Text(
+                                "Profile",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Profile Picture - positioned to overlap header
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: -50,
+                    child: Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: user.userPhoto != null
+                              ? NetworkImage(user.userPhoto!)
+                              : null,
+                          backgroundColor: Colors.grey.shade300,
+                          child: user.userPhoto == null
+                              ? Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.grey.shade600,
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+              // Name and Role
+              Text(
+                user.userName,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                user.userRole,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 30),
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  children: [
+                    _menuItem(
+                      Icons.edit_outlined,
+                      "Edit Profil",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const EditProfilePage()),
+                        );
+                      },
+                    ),
+                    _menuItem(
+                        Icons.notifications_outlined, "Notifikasi", () {}),
+                    _menuItem(Icons.settings_outlined, "Pengaturan", () {}),
+                    _menuItem(Icons.help_outline, "FAQ", () {}),
+                    const SizedBox(height: 30),
+                    // Log Out Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AuthPage()),
+                            (route) => false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF6B4A),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          "Log Out",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _menuItem(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F7FA),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF36546C),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 22,
               ),
             ),
-            child: Column(
-              children: const [
-                SizedBox(height: 20),
-                Text(
-                  "Profile",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 20),
-                CircleAvatar(
-                  radius: 45,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 43,
-                    backgroundColor: Colors.grey,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ================= USER INFO ====================
-          const Text(
-            "Khoir Karol N",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF36546C),
+            const Spacer(),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Color(0xFF9E9E9E),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Karyawan",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          // ================= MENU LIST ===================
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              children: [
-                _menuItem(Icons.edit, "Edit Profil"),
-                _menuItem(Icons.notifications, "Notifikasi"),
-                _menuItem(Icons.settings, "Pengaturan"),
-                _menuItem(Icons.help_outline, "FAQ"),
-                const SizedBox(height: 20),
-
-                // ===================== LOGOUT ====================
-                ElevatedButton(
-                  onPressed: () async {
-                    // WAJIB! Firebase logout
-                    await FirebaseAuth.instance.signOut();
-
-                    // Kembali ke AuthPage (root) dan biarkan StreamBuilder di AuthPage
-                    // menangani tampilan Login/Register berdasarkan state.
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AuthPage()),
-                      (route) => false,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    "Log Out",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _menuItem(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F6F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF36546C)),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-        ],
-      ),
-    );
-  }
-
-  // ================= NAVIGATION BAR =================
   Widget _buildBottomNav(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
@@ -162,9 +270,9 @@ class ProfilePage extends StatelessWidget {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
               ),
             ],
           ),
@@ -181,14 +289,15 @@ class ProfilePage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.home, color: Colors.grey[400], size: 26),
+                    Icon(Icons.home_outlined,
+                        color: Colors.grey[400], size: 28),
                     const SizedBox(height: 4),
                     Text(
                       "Beranda",
                       style: TextStyle(
                         color: Colors.grey[400],
                         fontSize: 11,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -198,11 +307,11 @@ class ProfilePage extends StatelessWidget {
               const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.person_outline,
-                      size: 26, color: Color(0xFF36546C)),
+                  Icon(Icons.person, size: 28, color: Color(0xFF36546C)),
                   SizedBox(height: 4),
                   Text(
                     "Profile",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF36546C),
                       fontSize: 11,
@@ -210,12 +319,12 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
+              )
             ],
           ),
         ),
         Positioned(
-          top: -30,
+          top: -28,
           child: GestureDetector(
             onTap: () {
               Navigator.push(
@@ -224,24 +333,24 @@ class ProfilePage extends StatelessWidget {
               );
             },
             child: Container(
-              width: 70,
-              height: 70,
+              width: 65,
+              height: 65,
               decoration: BoxDecoration(
                 color: const Color(0xFF36546C),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
+                border: Border.all(color: Colors.white, width: 5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 15,
+                    color: const Color(0xFF36546C).withOpacity(0.3),
+                    blurRadius: 20,
                     offset: const Offset(0, 5),
                   ),
                 ],
               ),
               child: const Icon(
-                Icons.qr_code_scanner,
+                Icons.qr_code_scanner_rounded,
                 color: Colors.white,
-                size: 32,
+                size: 30,
               ),
             ),
           ),
