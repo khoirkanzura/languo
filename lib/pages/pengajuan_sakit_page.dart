@@ -22,6 +22,11 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
   final picker = ImagePicker();
   final TextEditingController keteranganController = TextEditingController();
 
+  bool isSubmitted = false; // <-- status tombol Kirim
+
+  // ======================
+  // PILIH TANGGAL
+  // ======================
   Future<void> pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -42,16 +47,157 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
     if (picked != null) setState(() => endDate = picked);
   }
 
+  // ======================
+  // UPLOAD LAMPIRAN
+  // ======================
   Future<void> pickLampiran() async {
     final img = await picker.pickImage(source: ImageSource.gallery);
-    if (img != null) {
-      setState(() => lampiran = File(img.path));
-    }
+    if (img != null) setState(() => lampiran = File(img.path));
   }
 
-  // ================================
-  // SUBMIT FORM
-  // ================================
+  void removeLampiran() {
+    setState(() => lampiran = null);
+  }
+
+  // ======================
+  // POPUP KONFIRMASI
+  // ======================
+  void _showConfirmDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: const Icon(Icons.close, size: 18),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  "Apakah anda yakin\nuntuk mengirim?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                /// TOMBOL YA & TIDAK — SAMA BESAR
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          submitForm();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1666A9),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          "Ya",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF05454),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          "Tidak",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ======================
+  // POPUP SUKSES
+  // ======================
+  void showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.close,
+                        size: 20, color: Colors.black54),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.green, width: 3),
+                  ),
+                  child: const Icon(Icons.check, size: 40, color: Colors.green),
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  "Pengajuan Telah Diterima",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ======================
+  // KIRIM DATA
+  // ======================
   Future<void> submitForm() async {
     if (startDate == null || endDate == null) {
       return _showMessage("Tanggal belum dipilih");
@@ -74,9 +220,12 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
         lampiran: lampiran!,
       );
 
-      _showMessage("Pengajuan Sakit Berhasil Dikirim!");
+      // Tampilkan popup sukses
+      showSuccessDialog();
 
+      // Reset form
       setState(() {
+        isSubmitted = true;
         startDate = null;
         endDate = null;
         lampiran = null;
@@ -109,13 +258,16 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
     return bulan[m - 1];
   }
 
+  // ======================
+  // UI HALAMAN
+  // ======================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // HEADER
+          // HEADER ATAS
           Container(
             width: double.infinity,
             height: 160,
@@ -154,7 +306,7 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
             ),
           ),
 
-          // TAB
+          // TAB ATAS
           Transform.translate(
             offset: const Offset(0, -30),
             child: Container(
@@ -230,7 +382,7 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
           Expanded(
             child: selectedTab == 0
                 ? _buildForm()
-                : Center(
+                : const Center(
                     child: Text("Buka halaman Rekapan untuk melihat data")),
           )
         ],
@@ -238,6 +390,9 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
     );
   }
 
+  // ======================
+  // FORM
+  // ======================
   Widget _buildForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -245,10 +400,12 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 10),
+
           const Text("Tanggal",
               style: TextStyle(
                   color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
+
           Row(
             children: [
               Expanded(
@@ -270,7 +427,18 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
               ),
             ],
           ),
+
           const SizedBox(height: 25),
+
+          // =========================
+          // UPLOAD LAMPIRAN — SUDAH DIBENARKAN
+          // =========================
+          const Text("Lampiran",
+              style: TextStyle(
+                  color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+
+          // Tombol Upload selalu tampil
           GestureDetector(
             onTap: pickLampiran,
             child: Container(
@@ -279,20 +447,58 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
                 color: Colors.deepOrange,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Center(
+              child: const Center(
                 child: Text(
-                  lampiran == null ? "Upload Lampiran" : "Lampiran Terpilih",
-                  style: const TextStyle(
+                  "Upload Lampiran",
+                  style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
           ),
+
+          const SizedBox(height: 10),
+
+          // Jika ada file → tampilkan card
+          if (lampiran != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F7F7),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.insert_drive_file,
+                      size: 22, color: Colors.black54),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      lampiran!.path.split("/").last,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: removeLampiran,
+                    child: const Icon(Icons.close,
+                        color: Colors.black54, size: 20),
+                  )
+                ],
+              ),
+            ),
+
           const SizedBox(height: 20),
+
           const Text("Keterangan",
               style: TextStyle(
                   color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
+
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -308,30 +514,41 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
               ),
             ),
           ),
+
           const SizedBox(height: 25),
+
+          // ======================
+          // TOMBOL KIRIM
+          // ======================
           GestureDetector(
-            onTap: submitForm,
+            onTap: isSubmitted ? null : _showConfirmDialog,
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF2B3541),
+                color: isSubmitted
+                    ? Colors.blue.shade300
+                    : const Color(0xFF2B3541),
                 borderRadius: BorderRadius.circular(25),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  "Kirim",
-                  style: TextStyle(
+                  isSubmitted ? "Sudah Terkirim" : "Kirim",
+                  style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
           ),
+
           const SizedBox(height: 40),
         ],
       ),
     );
   }
 
+  // ======================
+  // DATE BOX
+  // ======================
   Widget _dateBox(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
