@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../screen/login_screen.dart';
 import '../screen/register_screen.dart';
 import '../pages/home_page.dart';
+import '../murid/home_murid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -26,10 +28,41 @@ class _AuthPageState extends State<AuthPage> {
           );
         }
 
-        // User SUDAH login → HomePage
+        // User SUDAH login → Home
         if (snapshot.hasData) {
-          debugPrint("User logged in: ${snapshot.data?.email}");
-          return const HomePage();
+          final user = snapshot.data!;
+
+          return FutureBuilder(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get(),
+            builder: (context, roleSnap) {
+              if (roleSnap.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (!roleSnap.hasData || !roleSnap.data!.exists) {
+                return const Scaffold(
+                  body: Center(child: Text("Role user tidak ditemukan")),
+                );
+              }
+
+              final role = roleSnap.data!.get('user_role');
+
+              if (role == "Karyawan") {
+                return const HomePage();
+              } else if (role == "Murid") {
+                return const HomeMurid();
+              } else {
+                return const Scaffold(
+                  body: Center(child: Text("Role tidak dikenali")),
+                );
+              }
+            },
+          );
         }
 
         // User BELUM login → LoginScreen atau RegisterScreen
