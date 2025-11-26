@@ -28,6 +28,45 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF36546C),
+              ),
+            ),
+
+            // Ikon buku di belakang teks
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Icon(
+                Icons.menu_book_rounded,
+                size: 140,
+                color: Colors.white.withOpacity(0.12),
+              ),
+            ),
+
+            // Title AppBar di depan ikon
+            AppBar(
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              automaticallyImplyLeading: false,
+              centerTitle: true,
+              title: const Text(
+                "Profile",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: _buildBottomNav(context),
       body: FutureBuilder<UserModel?>(
         future: getUserData(),
@@ -39,7 +78,6 @@ class ProfilePage extends StatelessWidget {
           if (!snapshot.hasData) {
             return const Center(child: Text("Data user tidak ditemukan"));
           }
-
           final user = snapshot.data!;
 
           return Column(
@@ -50,7 +88,7 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   Container(
                     width: double.infinity,
-                    height: 160,
+                    height: 104,
                     decoration: const BoxDecoration(
                       color: Color(0xFF36546C),
                       borderRadius: BorderRadius.only(
@@ -62,34 +100,20 @@ class ProfilePage extends StatelessWidget {
                       bottom: false,
                       child: Stack(
                         children: [
-                          // Decorative pattern
                           Positioned(
-                            right: 20,
-                            top: 20,
+                            right: 0,
+                            top: -56,
                             child: Icon(
                               Icons.menu_book_rounded,
-                              size: 80,
-                              color: Colors.white.withOpacity(0.1),
+                              size: 140,
+                              color: Colors.white.withOpacity(0.12),
                             ),
-                          ),
-                          Column(
-                            children: [
-                              const SizedBox(height: 20),
-                              const Text(
-                                "Profile",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
                     ),
                   ),
+
                   // Profile Picture - positioned to overlap header
                   Positioned(
                     left: 0,
