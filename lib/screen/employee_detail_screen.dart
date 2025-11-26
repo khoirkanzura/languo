@@ -43,9 +43,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
         child: SingleChildScrollView(
           child: Stack(
             children: [
-              // =============================
-              // Background biru
-              // =============================
               Container(
                 height: 180,
                 decoration: const BoxDecoration(
@@ -57,9 +54,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 ),
               ),
 
-              // =============================
-              // Isi halaman
-              // =============================
               Column(
                 children: [
                   // Header judul
@@ -91,9 +85,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
                   const SizedBox(height: 10),
 
-                  // =============================
-                  // CARD ATAS (dipendekin)
-                  // =============================
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: Container(
@@ -141,9 +132,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                     ),
                   ),
 
-                  // =============================
-                  // CARD MATERI
-                  // =============================
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Container(
@@ -270,9 +258,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
     );
   }
 
-  // =============================
-  // BOTTOM NAV
-  // =============================
   Widget _buildBottomNav() {
     return Stack(
       clipBehavior: Clip.none,
