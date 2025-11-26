@@ -34,188 +34,245 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final materials = (employeeData['meetings'] as List).first['materials'] as List<dynamic>;
+    final materials = (employeeData['meetings'] as List)
+        .first['materials'] as List<dynamic>;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF36546C),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Detail',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Card Info dengan background gelap
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFF36546C),
-              ),
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          employeeData['name'] as String,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Text(
-                          employeeData['date'] as String,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      employeeData['time'] as String,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 28,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Stack(
+            children: [
+              // =============================
+              // Background biru
+              // =============================
+              Container(
+                height: 180,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF36546C),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
                 ),
               ),
-            ),
 
-            // Meeting Section
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE75636),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
+              // =============================
+              // Isi halaman
+              // =============================
+              Column(
+                children: [
+                  // Header judul
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                      ),
-                      child: const Text(
-                        'Pertemuan 1',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Materi',
+                        const Expanded(
+                          child: Text(
+                            'Detail',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                              fontSize: 15,
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          ...materials.asMap().entries.map((entry) {
-                            final idx = entry.key;
-                            final material = entry.value as String;
-                            return Container(
-                              padding: const EdgeInsets.all(14),
-                              margin: const EdgeInsets.only(bottom: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.pink.shade50,
-                                borderRadius: BorderRadius.circular(8),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // =============================
+                  // CARD ATAS (dipendekin)
+                  // =============================
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      height: 150, // ← DIPENDEKIN
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                employeeData['name'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${idx + 1}.',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      material,
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                employeeData['date'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold, // ← BOLD
+                                  color: Colors.black87,
+                                  fontSize: 13,
+                                ),
                               ),
-                            );
-                          }).toList(),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            employeeData['time'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 30,
+                              color: Colors.black87,
+                              letterSpacing: 1,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
 
-            const SizedBox(height: 80), // spacing untuk bottom nav
-          ],
+                  // =============================
+                  // CARD MATERI
+                  // =============================
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12, // ← lebih soft
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Header Merah
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE75636),
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Pertemuan 1',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+
+                          // Isi Materi
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Materi',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // List Materi
+                                ...materials.asMap().entries.map((entry) {
+                                  final idx = entry.key;
+                                  final material = entry.value;
+
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 16),
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                        width: 1,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color:
+                                              Colors.grey.withOpacity(0.25),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${idx + 1}.',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            material,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold, // ← BOLD
+                                              color: Colors.black87,
+                                              fontSize: 14,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 90),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
+  // =============================
+  // BOTTOM NAV
+  // =============================
   Widget _buildBottomNav() {
     return Stack(
       clipBehavior: Clip.none,
@@ -241,7 +298,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 Navigator.pop(context);
               }),
               const SizedBox(width: 80),
-              _bottomItem(Icons.person_outline, "Profile", _currentIndex == 2, () {
+              _bottomItem(
+                  Icons.person_outline, "Profile", _currentIndex == 2, () {
                 setState(() => _currentIndex = 2);
                 Navigator.push(
                   context,
@@ -251,7 +309,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             ],
           ),
         ),
-        // QR Floating Button
+
+        // FAB
         Positioned(
           top: -20,
           child: GestureDetector(
@@ -260,7 +319,9 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 context,
                 MaterialPageRoute(builder: (context) => QRScannerPage()),
               );
+
               if (!mounted) return;
+
               if (result != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -276,6 +337,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF36546C),
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 4),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -283,7 +345,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                     offset: const Offset(0, 5),
                   ),
                 ],
-                border: Border.all(color: Colors.white, width: 4),
               ),
               child: const Center(
                 child: Icon(
