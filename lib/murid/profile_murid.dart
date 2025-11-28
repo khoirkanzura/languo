@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:languo/murid/home_murid.dart';
 import '../screen/qr_scanner_screen.dart';
-import 'home_page.dart';
-import 'auth_page.dart';
+import '../murid/home_murid.dart';
+import '../pages/auth_page.dart';
 import '../models/user_model.dart';
 import '../screen/edit_profile.dart';
 
@@ -307,7 +308,7 @@ class ProfilePage extends StatelessWidget {
                 onTap: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomePage()),
+                    MaterialPageRoute(builder: (_) => const HomeMurid()),
                   );
                 },
                 child: Column(

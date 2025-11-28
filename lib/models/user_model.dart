@@ -6,6 +6,7 @@ class UserModel {
   final String userEmail;
   final String userRole;
   final String? userPhoto;
+  final String? userPass;
   final DateTime createdAt;
 
   UserModel({
@@ -14,6 +15,7 @@ class UserModel {
     required this.userEmail,
     required this.userRole,
     this.userPhoto,
+    this.userPass,
   DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -25,6 +27,7 @@ class UserModel {
       'user_email': userEmail,
       'user_role': userRole,
       'user_photo': userPhoto,
+      'user_password': userPass, 
       "created_at": Timestamp.fromDate(createdAt),
     };
   }
@@ -40,6 +43,7 @@ class UserModel {
     userEmail: data['user_email'],
     userRole: data['user_role'],
     userPhoto: data['user_photo'],
+    userPass: data['user_password'], 
   );
 }
 
