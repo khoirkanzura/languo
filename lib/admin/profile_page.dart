@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:languo/murid/home_murid.dart';
-import '../screen/qr_scanner_screen.dart';
-import '../murid/home_murid.dart';
-import '../pages/auth_page.dart';
-import '../models/user_model.dart';
-import '../screen/edit_profile.dart';
+import '../../models/user_model.dart';
+import '../../screen/edit_profile.dart';
+import '../../routes/routes_manager.dart';
+import 'home_page.dart';
+import 'tambah_jadwal.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -308,7 +307,7 @@ class ProfilePage extends StatelessWidget {
                 onTap: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeMurid()),
+                    MaterialPageRoute(builder: (_) => const HomeAdmin()),
                   );
                 },
                 child: Column(
@@ -348,34 +347,33 @@ class ProfilePage extends StatelessWidget {
             ],
           ),
         ),
+        // Floating Add Button
         Positioned(
-          top: -28,
+          top: -20,
           child: GestureDetector(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const QRScannerPage()),
+                MaterialPageRoute(builder: (context) => TambahJadwalPage()),
               );
             },
             child: Container(
-              width: 65,
-              height: 65,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
-                color: const Color(0xFF36546C),
+                color: Color(0xFF36546C),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 5),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF36546C).withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
                   ),
                 ],
+                border: Border.all(color: Colors.white, width: 4),
               ),
-              child: const Icon(
-                Icons.qr_code_scanner_rounded,
-                color: Colors.white,
-                size: 30,
+              child: Center(
+                child: Icon(Icons.add, color: Colors.white, size: 38),
               ),
             ),
           ),

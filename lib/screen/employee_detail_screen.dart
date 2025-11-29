@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:languo/screen/edit_profile.dart';
 import 'qr_scanner_screen.dart';
-import '../pages/profile_page.dart';
 
 class EmployeeDetailScreen extends StatefulWidget {
   const EmployeeDetailScreen({Key? key}) : super(key: key);
@@ -288,7 +288,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 setState(() => _currentIndex = 2);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  MaterialPageRoute(builder: (_) => const EditProfilePage()),
                 );
               }),
             ],

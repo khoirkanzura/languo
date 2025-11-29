@@ -130,13 +130,13 @@ class _KehadiranPageState extends State<KehadiranPage> {
     // Hitung status berdasarkan waktu masuk
     String masuk = kehadiranList[index]['masuk'];
     String newStatus = 'Tepat Waktu';
-    
+
     if (!masuk.contains('--')) {
       try {
         final parts = masuk.split(":");
         final h = int.parse(parts[0]);
         final m = int.parse(parts[1]);
-        
+
         // Jika masuk setelah 08:10, maka terlambat
         if (h > 8 || (h == 8 && m > 10)) {
           newStatus = 'Terlambat';
@@ -331,7 +331,8 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 children: [
                   // Status Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
                       color: _getStatusBgColor(status),
                       borderRadius: BorderRadius.circular(12),
@@ -386,7 +387,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
   }
 }
 
-// Widget Dialog dengan Countdown Timer 
+// Widget Dialog dengan Countdown Timer
 class _CountdownDialog extends StatefulWidget {
   final VoidCallback onCheckOut;
 
@@ -482,7 +483,7 @@ class _CountdownDialogState extends State<_CountdownDialog> {
             ),
             const SizedBox(height: 12),
 
-            // Countdown Timer Badge (Green) 
+            // Countdown Timer Badge (Green)
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,

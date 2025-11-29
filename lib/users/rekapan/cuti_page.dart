@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/izin_service.dart';
+import '../../../services/cuti_service.dart';
 
-class RekapanIzinPage extends StatefulWidget {
-  const RekapanIzinPage({super.key});
+class RekapanCutiPage extends StatefulWidget {
+  const RekapanCutiPage({super.key});
 
   @override
-  State<RekapanIzinPage> createState() => _RekapanIzinPageState();
+  State<RekapanCutiPage> createState() => _RekapanCutiPageState();
 }
 
-class _RekapanIzinPageState extends State<RekapanIzinPage> {
-  final _izinService = IzinService();
+class _RekapanCutiPageState extends State<RekapanCutiPage> {
+  final _cutiService = CutiService();
   final _auth = FirebaseAuth.instance;
 
   @override
@@ -43,7 +43,7 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
                     ),
                     const SizedBox(width: 15),
                     const Text(
-                      "Izin",
+                      "Cuti",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -62,7 +62,7 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
           // LIST REKAPAN
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _izinService.getRekapanIzin(currentUser!.uid),
+              stream: _cutiService.getRekapanCuti(currentUser!.uid),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
@@ -97,7 +97,7 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
 
                     return _buildRekapanCard(
                       kelas: d['kelas'] ?? '-',
-                      perihal: d['perihal'] ?? 'Izin',
+                      perihal: d['perihal'] ?? 'Cuti',
                       tanggalIzin: _formatTanggal(tglMulai),
                       tanggalSelesai: _formatTanggal(tglSelesai),
                       status: d['status'] ?? 'Proses',
