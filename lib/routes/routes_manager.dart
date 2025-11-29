@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screen/login_screen.dart';
 import '../screen/register_screen.dart';
-import '../pages/home_page.dart';
-import '../murid/home_murid.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../admin/home_page.dart';
+import '../users/karyawan/home_page.dart';
+import '../users/murid/home_page.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -52,11 +53,13 @@ class _AuthPageState extends State<AuthPage> {
 
               final role = roleSnap.data!.get('user_role');
 
-              if (role == "Karyawan") {
-                return const HomePage();
+              if (role == "Admin") {
+                return const HomeAdmin();
+              } else if (role == "Karyawan") {
+                return const HomeKaryawan();
               } else if (role == "Murid") {
                 return const HomeMurid();
-              } else {
+              } else  {
                 return const Scaffold(
                   body: Center(child: Text("Role tidak dikenali")),
                 );

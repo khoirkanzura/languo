@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../screen/qr_scanner_screen.dart';
-import '../screen/employee_detail_screen.dart';
-import '../pages/profile_page.dart';
-import 'package:languo/pages/kehadiran_page.dart';
-import 'package:languo/pages/pengajuan_sakit_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/user_model.dart';
-import 'package:languo/pages/pengajuan_izin_page.dart';
-import 'package:languo/pages/rekapan_izin_page.dart';
+import '../../screen/qr_scanner_screen.dart';
+import '../../screen/employee_detail_screen.dart';
+import '../../models/user_model.dart';
+import 'profile_page.dart';
+import 'package:languo/users/rekapan/kehadiran_page.dart';
+import 'package:languo/users/pengajuan/sakit_page.dart';
+import 'package:languo/users/pengajuan/izin_page.dart';
+import 'package:languo/users/rekapan/izin_page.dart';
 
 class HomeMurid extends StatefulWidget {
   const HomeMurid({super.key});
