@@ -13,16 +13,29 @@ class SakitService {
     required String userId,
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    // Sanitasi nama file agar aman
     final cleanFileName = fileName.replaceAll(" ", "_");
 
     final storagePath = 'sakit_lampiran/$userId/${timestamp}_$cleanFileName';
     final ref = _storage.ref().child(storagePath);
 
+    // Tentukan content type berdasarkan ekstensi file
+    String ext = fileName.split(".").last.toLowerCase();
+    String contentType = "application/octet-stream";
+
+    final contentTypes = {
+      "jpg": "image/jpeg",
+      "jpeg": "image/jpeg",
+      "png": "image/png",
+      "pdf": "application/pdf",
+      "doc": "application/msword",
+      "docx":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    };
+
+    contentType = contentTypes[ext] ?? "application/octet-stream";
+
     try {
-      final metadata = SettableMetadata(
-        contentType: "image/jpeg",
-      );
+      final metadata = SettableMetadata(contentType: contentType);
 
       await ref.putData(bytes, metadata);
       final url = await ref.getDownloadURL();
@@ -47,20 +60,31 @@ class SakitService {
     required String fileName,
   }) async {
     try {
+      // Ambil profile user login
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .get();
+
+      final userName = userDoc.data()?["user_name"] ?? "-";
+      final userRole = userDoc.data()?["user_role"] ?? "-";
+    
       final uploadResult = await uploadLampiran(
         bytes: lampiranBytes,
         fileName: fileName,
         userId: userId,
       );
 
+      // Simpan ke Firestore
       await _firestore.collection("pengajuan_sakit").add({
         "userId": userId,
+        "userName": userName,
+        "userRole": userRole,
         "tanggalMulai": Timestamp.fromDate(startDate),
         "tanggalSelesai": Timestamp.fromDate(endDate),
         "keterangan": keterangan,
         "lampiranUrl": uploadResult['lampiranUrl'],
-        "storagePath":
-            uploadResult['storagePath'],
+        "storagePath": uploadResult['storagePath'],
         "status": "Diajukan",
         "createdAt": FieldValue.serverTimestamp(),
       });
