@@ -7,6 +7,8 @@ class UserModel {
   final String userRole;
   final String? userPhoto;
   final String? userPass;
+  final num sisaCuti;
+
   final DateTime createdAt;
 
   UserModel({
@@ -16,7 +18,8 @@ class UserModel {
     required this.userRole,
     this.userPhoto,
     this.userPass,
-  DateTime? createdAt,
+    required this.sisaCuti,
+    DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   /// Convert Model -> Firestore
@@ -27,24 +30,25 @@ class UserModel {
       'user_email': userEmail,
       'user_role': userRole,
       'user_photo': userPhoto,
-      'user_password': userPass, 
+      'user_password': userPass,
+      'sisa_cuti': sisaCuti,
       "created_at": Timestamp.fromDate(createdAt),
     };
   }
 
   /// Convert Firestore -> Model
-  factory UserModel.fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> doc) {
-  final data = doc.data()!;
-  
-  return UserModel(
-    uid: doc.id,
-    userName: data['user_name'],
-    userEmail: data['user_email'],
-    userRole: data['user_role'],
-    userPhoto: data['user_photo'],
-    userPass: data['user_password'], 
-  );
-}
+  factory UserModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
 
+    return UserModel(
+      uid: doc.id,
+      userName: data['user_name'],
+      userEmail: data['user_email'],
+      userRole: data['user_role'],
+      userPhoto: data['user_photo'],
+      userPass: data['user_password'],
+      sisaCuti: data['sisa_cuti'],
+      createdAt: (data['created_at'] as Timestamp).toDate(),
+    );
+  }
 }

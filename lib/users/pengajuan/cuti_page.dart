@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/cuti_service.dart';
 
 class PengajuanCutiPage extends StatefulWidget {
@@ -12,30 +13,43 @@ class PengajuanCutiPage extends StatefulWidget {
 }
 
 class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
-  int selectedTab = 0;
+  final _cutiService = CutiService();
+  final _auth = FirebaseAuth.instance;
 
-  String? selectedPerihal;
+  int selectedTab = 0;
   DateTime? startDate;
   DateTime? endDate;
-  File? lampiran;
 
-  final picker = ImagePicker();
-  final keteranganController = TextEditingController();
+  Uint8List? lampiranBytes;
+  String? lampiranName;
 
-  List<String> perihalList = [
-    "Sakit Keras",
-    "Menikah",
-    "Duka",
-    "Melahirkan",
-    "Lainnya",
-  ];
+  final TextEditingController alasanController = TextEditingController();
+  final TextEditingController keteranganController = TextEditingController();
 
-  bool sudahTerkirim = false;
+  bool isSubmitted = false;
+  bool isLoading = false;
 
-  // =========================
-  // PICKER
-  // =========================
+  num? sisaCutiSaatPengajuan;
+  bool isFetchingCuti = true;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchSisaCuti();
+  }
+
+  Future<void> fetchSisaCuti() async {
+    String userId = _auth.currentUser!.uid;
+    final doc =
+        await FirebaseFirestore.instance.collection("users").doc(userId).get();
+
+    setState(() {
+      sisaCutiSaatPengajuan = (doc.data()?["sisa_cuti"] ?? 0) as num;
+      isFetchingCuti = false;
+    });
+  }
+
+  // ======================== TANGGAL ========================
   Future<void> pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -56,229 +70,220 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
     if (picked != null) setState(() => endDate = picked);
   }
 
+  // ======================== LAMPIRAN ========================
   Future<void> pickLampiran() async {
-    final img = await picker.pickImage(source: ImageSource.gallery);
-    if (img != null) setState(() => lampiran = File(img.path));
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        lampiranBytes = result.files.first.bytes;
+        lampiranName = result.files.first.name;
+      });
+    }
   }
 
   void removeLampiran() {
-    setState(() => lampiran = null);
+    setState(() {
+      lampiranBytes = null;
+      lampiranName = null;
+    });
   }
 
-  // =========================
-  // FORMAT BULAN
-  // =========================
-  String _monthName(int m) {
-    const bulan = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember"
-    ];
-    return bulan[m - 1];
+  // ======================== VALIDASI SEBELUM KONFIRM ========================
+  bool _validateFormBeforeConfirm() {
+    if (alasanController.text.isEmpty) {
+      _showMessage("Alasan cuti belum diisi");
+      return false;
+    }
+    if (startDate == null || endDate == null) {
+      _showMessage("Tanggal belum dipilih");
+      return false;
+    }
+    if (endDate!.isBefore(startDate!)) {
+      _showMessage("Tanggal akhir harus setelah tanggal mulai");
+      return false;
+    }
+
+    // Hitung jumlah hari cuti (termasuk hari awal dan akhir)
+    int totalHariCuti = endDate!.difference(startDate!).inDays + 1;
+
+    if (sisaCutiSaatPengajuan == null) {
+      _showMessage("Gagal memuat data sisa cuti");
+      return false;
+    }
+
+    if (totalHariCuti > sisaCutiSaatPengajuan!) {
+      _showMessage(
+          "Pengajuan melebihi sisa cuti.\nSisa cuti Anda: $sisaCutiSaatPengajuan hari");
+      return false;
+    }
+
+    return true;
   }
 
-  // =========================
-  // POPUP KONFIRMASI
-  // =========================
+  void _onKirimPressed() {
+    if (isSubmitted || isLoading) return;
+    if (_validateFormBeforeConfirm()) {
+      _showConfirmDialog();
+    }
+  }
+
   void _showConfirmDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) {
+      builder: (dialogContext) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: const Icon(Icons.close, size: 18),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  "Apakah anda yakin\nuntuk mengirim?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _kirimPengajuan();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1666A9),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                          ),
-                        ),
-                        child: const Text(
-                          "Ya",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Text(
+                "Apakah anda yakin untuk mengirim?",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        _submitFromButton();
+                      },
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF1666A9)),
+                      child: const Text("Ya",
+                          style: TextStyle(color: Colors.white)),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF05454),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                          ),
-                        ),
-                        child: const Text(
-                          "Tidak",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFF05454)),
+                      child: const Text("Tidak",
+                          style: TextStyle(color: Colors.white)),
                     ),
-                  ],
-                )
-              ],
-            ),
+                  ),
+                ],
+              )
+            ]),
           ),
         );
       },
     );
   }
 
-  // =========================
-  // POPUP SUKSES
-  // =========================
-  void _showSuccessDialog() {
+  void _submitFromButton() async {
+    setState(() => isLoading = true);
+    final success = await submitForm();
+    setState(() => isLoading = false);
+
+    if (success) showSuccessDialog();
+  }
+
+  // ======================== POPUP SUKSES ========================
+  void showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: const Icon(Icons.close, size: 18),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.green, width: 3),
-                    color: Colors.white,
-                  ),
-                  child: const Icon(Icons.check, color: Colors.green, size: 44),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  "Pengajuan Telah\nDiterima",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => isSubmitted = false);
+                },
+                child: const Icon(Icons.close, color: Colors.black54),
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 5),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.green, width: 3),
+              ),
+              child: const Icon(Icons.check, size: 40, color: Colors.green),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              "Pengajuan Berhasil Dikirim",
+              style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                setState(() => isSubmitted = false);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              ),
+              child: const Text("OK",
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+        ),
+      ),
     );
   }
 
-  // =========================
-  // KIRIM KE SERVICE
-  // =========================
-  Future<void> _kirimPengajuan() async {
-    if (selectedPerihal == null ||
-        startDate == null ||
-        endDate == null ||
-        lampiran == null ||
-        keteranganController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Harap lengkapi semua field!")),
-      );
-      return;
-    }
-
+  // ======================== KIRIM DATA ========================
+  Future<bool> submitForm() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      String userId = _auth.currentUser?.uid ?? "unknown";
 
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("User tidak ditemukan!")),
-        );
-        return;
-      }
-
-      await CutiService().kirimPengajuan(
-        userId: user.uid,
+      await _cutiService.kirimPengajuan(
+        userId: userId,
+        alasan: alasanController.text,
         startDate: startDate!,
         endDate: endDate!,
         keterangan: keteranganController.text,
-        lampiran: lampiran!,
+        lampiranBytes: lampiranBytes,
+        fileName: lampiranName,
+        sisaCutiSaatPengajuan:
+            sisaCutiSaatPengajuan, // ⬅ kirim apa adanya dari users
       );
 
       setState(() {
-        sudahTerkirim = true;
-        selectedPerihal = null;
+        isSubmitted = true;
+        alasanController.clear();
+        keteranganController.clear();
         startDate = null;
         endDate = null;
-        lampiran = null;
-        keteranganController.clear();
+        lampiranBytes = null;
+        lampiranName = null;
       });
 
-      Future.delayed(const Duration(milliseconds: 200), () {
-        _showSuccessDialog();
-      });
+      return true;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal mengirim pengajuan: $e")),
-      );
+      _showMessage("Gagal mengirim pengajuan: $e");
+      return false;
     }
   }
 
-  // =========================
-  // BUILD UI
-  // =========================
+  // ======================== UI PAGE ========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -286,23 +291,39 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
       body: Column(
         children: [
           _buildHeader(),
-          _buildTabs(),
+          _buildTabBar(),
+
+          // === TAMBAHKAN INI ===
+          if (selectedTab == 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 8),
+              child: isFetchingCuti
+                  ? const CircularProgressIndicator()
+                  : Text(
+                      "Sisa Cuti: ${sisaCutiSaatPengajuan!.toInt()} hari",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+            ),
+
           Expanded(
             child: selectedTab == 0
                 ? _buildForm()
-                : const Center(child: Text("Halaman Rekapan Cuti")),
+                : const Center(
+                    child: Text("Buka halaman Rekapan untuk melihat data"),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  // -------------------------
-  // HEADER
-  // -------------------------
+  // ===== HEADER =====
   Widget _buildHeader() {
     return Container(
-      width: double.infinity,
       height: 160,
       decoration: const BoxDecoration(
         color: Color(0xFF36546C),
@@ -319,11 +340,7 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
               onTap: () => Navigator.pop(context),
               child: const Padding(
                 padding: EdgeInsets.only(left: 16),
-                child: Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                child: Icon(Icons.arrow_back, color: Colors.white, size: 28),
               ),
             ),
           ),
@@ -332,10 +349,9 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
             child: Text(
               "Cuti",
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -343,10 +359,8 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
     );
   }
 
-  // -------------------------
-  // TAB BUTTON
-  // -------------------------
-  Widget _buildTabs() {
+  // ===== TAB =====
+  Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
       child: Container(
@@ -356,36 +370,49 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(40),
         ),
-        child: Row(
-          children: [
-            _tabButton("Pengajuan", 0),
-            _tabButton("Rekapan", 1),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final tabWidth = constraints.maxWidth / 2;
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 250),
+                  left: selectedTab == 0 ? 0 : tabWidth,
+                  child: Container(
+                    height: 55,
+                    width: tabWidth,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Colors.deepOrange, Colors.redAccent],
+                      ),
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    _tabButton("Pengajuan", 0),
+                    _tabButton("Rekapan", 1),
+                  ],
+                )
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _tabButton(String text, int index) {
+  Widget _tabButton(String title, int index) {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => selectedTab = index),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: selectedTab == index
-                ? const LinearGradient(
-                    colors: [Colors.deepOrange, Colors.redAccent],
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(40),
-          ),
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: selectedTab == index ? Colors.white : Colors.grey[700],
-                fontWeight: FontWeight.w600,
-              ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: selectedTab == index ? Colors.white : Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -393,118 +420,59 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
     );
   }
 
-  // -------------------------
-  // FORM
-  // -------------------------
+  // ===== FORM =====
   Widget _buildForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
-
-          // PERIHAL
-          _sectionTitle("Perihal Cuti"),
-          _dropdownPerihal(),
-
-          const SizedBox(height: 20),
-
-          // TANGGAL
-          _sectionTitle("Tanggal"),
-          _tanggalPicker(),
-
-          const SizedBox(height: 20),
-
-          // LAMPIRAN
-          _sectionTitle("Lampiran"),
-          _uploadLampiran(),
-
-          const SizedBox(height: 20),
-
-          // KETERANGAN
-          _sectionTitle("Keterangan"),
-          _keteranganBox(),
-
-          const SizedBox(height: 25),
-
-          _kirimButton(),
-
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Color(0xFF7F7F7F),
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  // PERIHAL DROPDOWN
-  Widget _dropdownPerihal() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F7),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: selectedPerihal,
-          hint: const Text("Pilih Perihal Cuti"),
-          items: perihalList
-              .map((e) => DropdownMenuItem(
-                    value: e,
-                    child: Text(e),
-                  ))
-              .toList(),
-          onChanged: (val) => setState(() => selectedPerihal = val),
-        ),
-      ),
-    );
-  }
-
-  // TANGGAL
-  Widget _tanggalPicker() {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: pickStartDate,
-            child: _dateBox(
-              startDate == null
-                  ? "Tanggal Mulai"
-                  : "${startDate!.day} ${_monthName(startDate!.month)} ${startDate!.year}",
-            ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SizedBox(height: 20),
+        const Text("Alasan Cuti",
+            style: TextStyle(
+                color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F7F7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: TextField(
+            controller: alasanController,
+            decoration: const InputDecoration(
+                hintText: "Tulis alasan cuti...", border: InputBorder.none),
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: pickEndDate,
-            child: _dateBox(
-              endDate == null
-                  ? "Tanggal Selesai"
-                  : "${endDate!.day} ${_monthName(endDate!.month)} ${endDate!.year}",
+        const SizedBox(height: 25),
+        const Text("Tanggal",
+            style: TextStyle(
+                color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: pickStartDate,
+                child: _dateBox(startDate == null
+                    ? "Pilih Tanggal"
+                    : "${startDate!.day} ${_monthName(startDate!.month)} ${startDate!.year}"),
+              ),
             ),
-          ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                onTap: pickEndDate,
+                child: _dateBox(endDate == null
+                    ? "Pilih Tanggal"
+                    : "${endDate!.day} ${_monthName(endDate!.month)} ${endDate!.year}"),
+              ),
+            ),
+          ],
         ),
-      ],
-    );
-  }
-
-  // LAMPIRAN
-  Widget _uploadLampiran() {
-    return Column(
-      children: [
+        const SizedBox(height: 25),
+        const Text("Lampiran (Opsional)",
+            style: TextStyle(
+                color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
         GestureDetector(
           onTap: pickLampiran,
           child: Container(
@@ -514,18 +482,14 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Center(
-              child: Text(
-                "Upload Lampiran",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: Text("Upload Lampiran",
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ),
         ),
         const SizedBox(height: 10),
-        if (lampiran != null)
+        if (lampiranBytes != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -539,73 +503,67 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    lampiran!.path.split("/").last,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    lampiranName ?? "Lampiran",
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
-                const SizedBox(width: 10),
                 GestureDetector(
                   onTap: removeLampiran,
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.black54,
-                    size: 20,
-                  ),
-                )
+                  child: const Icon(Icons.close, color: Colors.black54),
+                ),
               ],
             ),
           ),
-      ],
-    );
-  }
-
-  // KETERANGAN
-  Widget _keteranganBox() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F7),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: TextField(
-        controller: keteranganController,
-        maxLines: 4,
-        decoration: const InputDecoration(
-          hintText: "Tulis keterangan...",
-          border: InputBorder.none,
+        const SizedBox(height: 20),
+        const Text("Keterangan",
+            style: TextStyle(
+                color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F7F7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: TextField(
+            controller: keteranganController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+                hintText: "Tulis keterangan...", border: InputBorder.none),
+          ),
         ),
-      ),
-    );
-  }
-
-  // BUTTON KIRIM
-  Widget _kirimButton() {
-    return GestureDetector(
-      onTap: sudahTerkirim ? null : _showConfirmDialog,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: sudahTerkirim ? Colors.blue.shade300 : const Color(0xFF2B3541),
-          borderRadius: BorderRadius.circular(25),
-        ),
-        child: Center(
-          child: Text(
-            sudahTerkirim ? "Sudah Terkirim" : "Kirim",
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+        const SizedBox(height: 25),
+        GestureDetector(
+          onTap: (isSubmitted) ? null : _onKirimPressed,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color:
+                  isSubmitted ? Colors.blue.shade300 : const Color(0xFF2B3541),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      isSubmitted ? "Sudah Terkirim" : "Kirim",
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
             ),
           ),
         ),
-      ),
+        const SizedBox(height: 40),
+      ]),
     );
   }
 
-  // DATE BOX UI
   Widget _dateBox(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -614,12 +572,30 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(text),
-          const Icon(Icons.calendar_today, size: 18),
-        ],
-      ),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [Text(text), const Icon(Icons.calendar_today, size: 18)]),
     );
+  }
+
+  String _monthName(int m) {
+    const b = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember"
+    ];
+    return b[m - 1];
+  }
+
+  void _showMessage(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }

@@ -1,19 +1,49 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 
 class CutiService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  /// Upload lampiran ke Firebase Storage
-  Future<String> uploadLampiran(File file) async {
-    String fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
-    final ref = _storage.ref().child("lampiran_cuti/$fileName");
+  /// Upload lampiran cuti ke Firebase Storage (jika ada)
+  Future<Map<String, String>> uploadLampiran({
+    required Uint8List bytes,
+    required String fileName,
+    required String userId,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final cleanFileName = fileName.replaceAll(" ", "_");
 
-    await ref.putFile(file);
+    final storagePath = 'cuti_lampiran/$userId/${timestamp}_$cleanFileName';
+    final ref = _storage.ref().child(storagePath);
 
-    return await ref.getDownloadURL();
+    // Tentukan content type berdasarkan ekstensi file
+    String ext = fileName.split(".").last.toLowerCase();
+    String contentType = "application/octet-stream";
+
+    final contentTypes = {
+      "jpg": "image/jpeg",
+      "jpeg": "image/jpeg",
+      "png": "image/png",
+      "pdf": "application/pdf",
+      "doc": "application/msword",
+      "docx":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    };
+
+    contentType = contentTypes[ext] ?? "application/octet-stream";
+
+    final metadata = SettableMetadata(contentType: contentType);
+
+    await ref.putData(bytes, metadata);
+    final url = await ref.getDownloadURL();
+
+    return {
+      'lampiranUrl': url,
+      'storagePath': storagePath,
+    };
   }
 
   /// Kirim pengajuan cuti ke Firestore
@@ -21,25 +51,60 @@ class CutiService {
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
-    required String keterangan,
-    required File lampiran,
+    required String alasan,
+    String? keterangan,
+    Uint8List? lampiranBytes,
+    String? fileName,
+    required num? sisaCutiSaatPengajuan,
   }) async {
-    // Upload gambar ke Storage
-    String urlLampiran = await uploadLampiran(lampiran);
+    try {
+      // Ambil profile user
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .get();
 
-    // Konsisten pakai koleksi: "pengajuan_cuti"
-    await _firestore.collection("pengajuan_cuti").add({
-      "userId": userId,
-      "tanggalMulai": Timestamp.fromDate(startDate),
-      "tanggalSelesai": Timestamp.fromDate(endDate),
-      "keterangan": keterangan,
-      "lampiranUrl": urlLampiran,
-      "status": "Proses",
-      "createdAt": FieldValue.serverTimestamp(),
-    });
+      final userName = userDoc.data()?["user_name"] ?? "-";
+      final userRole = userDoc.data()?["user_role"] ?? "-";
+      final emailUser = userDoc.data()?["user_email"] ?? "-";
+
+      String? lampiranUrl;
+      String? storagePath;
+
+      // Upload lampiran hanya jika ada file
+      if (lampiranBytes != null && fileName != null) {
+        final uploadResult = await uploadLampiran(
+          bytes: lampiranBytes,
+          fileName: fileName,
+          userId: userId,
+        );
+        lampiranUrl = uploadResult['lampiranUrl'];
+        storagePath = uploadResult['storagePath'];
+      }
+
+      // Simpan pengajuan cuti ke Firestore
+      await _firestore.collection("pengajuan_cuti").add({
+        "userId": userId,
+        "userName": userName,
+        "emailUser": emailUser,
+        "userRole": userRole,
+        "tanggalMulai": Timestamp.fromDate(startDate),
+        "tanggalSelesai": Timestamp.fromDate(endDate),
+        "alasan": alasan,
+        "lampiranUrl": lampiranUrl,
+        "storagePath": storagePath,
+        "status": "Diajukan",
+        "keterangan": keterangan,
+        "sisaCuti": sisaCutiSaatPengajuan,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Error kirimPengajuan Cuti: $e");
+      rethrow;
+    }
   }
 
-  /// Ambil rekapan cuti berdasarkan user
+  /// Ambil rekapan cuti berdasarkan user login
   Stream<QuerySnapshot> getRekapanCuti(String uid) {
     return _firestore
         .collection("pengajuan_cuti")
