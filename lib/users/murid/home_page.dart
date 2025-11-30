@@ -9,6 +9,8 @@ import 'package:languo/users/rekapan/kehadiran_page.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/pengajuan/izin_page.dart';
 import 'package:languo/users/rekapan/izin_page.dart';
+import '../karyawan/home_page.dart';
+import '../../admin/home_page.dart';
 
 class HomeMurid extends StatefulWidget {
   const HomeMurid({super.key});
@@ -19,6 +21,36 @@ class HomeMurid extends StatefulWidget {
 
 class _HomeMuridState extends State<HomeMurid> {
   String? _lastScannedData;
+
+  Future<void> checkUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final role = doc.data()?['user_role']; // Ambil role
+
+    if (!mounted) return;
+
+    if (role != "Murid") {
+      if (role == "Karyawan") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeKaryawan()),
+        );
+      } else if (role == "Admin") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeAdmin()),
+        );
+      }
+    }
+  }
 
   Future<UserModel?> getUserData() async {
     final user = FirebaseAuth.instance.currentUser;
