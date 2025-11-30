@@ -47,5 +47,16 @@ service cloud.firestore {
         // Izinkan user yang login untuk mengupdate atau menghapus pengajuan mereka sendiri
         allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
+
+    match /pengajuan_izin/{pengajuanId} {
+        // Izinkan user yang login untuk membaca pengajuan mereka sendiri
+        allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+        
+        // Izinkan user yang login untuk membuat pengajuan baru (create)
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+        
+        // Izinkan user yang login untuk mengupdate atau menghapus pengajuan mereka sendiri
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
   }
 }
