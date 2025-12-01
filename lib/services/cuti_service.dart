@@ -112,4 +112,37 @@ class CutiService {
         .orderBy("createdAt", descending: true)
         .snapshots();
   }
+
+  /// Hapus pengajuan cuti dari Firestore dan lampiran dari Storage
+  Future<void> hapusPengajuanCuti(String cutiId) async {
+    try {
+      final cutiDocRef = _firestore.collection('pengajuan_cuti').doc(cutiId);
+      final cutiDoc = await cutiDocRef.get();
+
+      if (!cutiDoc.exists) {
+        throw Exception("Dokumen cuti tidak ditemukan.");
+      }
+
+      final data = cutiDoc.data();
+      final storagePath = data?['storagePath'] as String?;
+
+      // 1. Hapus Lampiran dari Firebase Storage (jika ada)
+      if (storagePath != null && storagePath.isNotEmpty) {
+        final ref = _storage.ref().child(storagePath);
+        await ref.delete();
+        debugPrint("Lampiran berhasil dihapus dari Storage: $storagePath");
+      }
+
+      // 2. Hapus Dokumen dari Firestore
+      await cutiDocRef.delete();
+      debugPrint("Dokumen cuti $cutiId berhasil dihapus.");
+    } on FirebaseException catch (e) {
+      // Menangani error spesifik Firebase (misal: permission denied, file not found)
+      debugPrint("Firebase Error saat menghapus pengajuan cuti: $e");
+      rethrow;
+    } catch (e) {
+      debugPrint("General Error saat menghapus pengajuan cuti: $e");
+      rethrow;
+    }
+  }
 }

@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/cuti_service.dart';
+import '../rekapan/cuti_page.dart';
 
 class PengajuanCutiPage extends StatefulWidget {
   const PengajuanCutiPage({super.key});
@@ -312,9 +313,7 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
           Expanded(
             child: selectedTab == 0
                 ? _buildForm()
-                : const Center(
-                    child: Text("Buka halaman Rekapan untuk melihat data"),
-                  ),
+                : const RekapanCutiPage(), // Panggil halaman rekapan cuti
           ),
         ],
       ),
