@@ -30,6 +30,8 @@ dependencies:
   firebase_storage: ^13.0.4
   crypto: ^3.0.3
   file_picker: ^10.3.7
+  url_launcher: ^6.3.2
+  universal_html: ^2.0.6
 
 dev_dependencies:
   flutter_test:
