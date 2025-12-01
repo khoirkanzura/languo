@@ -7,6 +7,7 @@ class SakitService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
+  /// Upload lampiran sakit ke Firebase Storage
   Future<Map<String, String>> uploadLampiran({
     required Uint8List bytes,
     required String fileName,
@@ -18,10 +19,7 @@ class SakitService {
     final storagePath = 'sakit_lampiran/$userId/${timestamp}_$cleanFileName';
     final ref = _storage.ref().child(storagePath);
 
-    // Tentukan content type berdasarkan ekstensi file
     String ext = fileName.split(".").last.toLowerCase();
-    String contentType = "application/octet-stream";
-
     final contentTypes = {
       "jpg": "image/jpeg",
       "jpeg": "image/jpeg",
@@ -31,68 +29,61 @@ class SakitService {
       "docx":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     };
+    String contentType = contentTypes[ext] ?? "application/octet-stream";
 
-    contentType = contentTypes[ext] ?? "application/octet-stream";
+    final metadata = SettableMetadata(contentType: contentType);
+    await ref.putData(bytes, metadata);
+    final url = await ref.getDownloadURL();
 
-    try {
-      final metadata = SettableMetadata(contentType: contentType);
-
-      await ref.putData(bytes, metadata);
-      final url = await ref.getDownloadURL();
-
-      return {
-        'lampiranUrl': url,
-        'storagePath': storagePath,
-      };
-    } on FirebaseException catch (e) {
-      debugPrint("Firebase Storage Upload Error: ${e.code} - ${e.message}");
-      rethrow;
-    }
+    return {
+      'lampiranUrl': url,
+      'storagePath': storagePath,
+      'fileName': fileName,
+    };
   }
 
-  /// Kirim pengajuan sakit ke Firestore
+  /// Kirim pengajuan sakit ke Firestore (Lampiran WAJIB)
   Future<void> kirimPengajuan({
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
     required String keterangan,
-    required Uint8List lampiranBytes,
-    required String fileName,
+    Uint8List? lampiranBytes,
+    String? fileName,
   }) async {
     try {
-      // Ambil profile user login
-      final userDoc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(userId)
-          .get();
+      // === VALIDASI LAMPIRAN WAJIB ===
+      if (lampiranBytes == null || fileName == null) {
+        throw Exception("Lampiran surat sakit wajib diunggah.");
+      }
 
+      final userDoc = await _firestore.collection("users").doc(userId).get();
       final userName = userDoc.data()?["user_name"] ?? "-";
       final userRole = userDoc.data()?["user_role"] ?? "-";
-    
+      final emailUser = userDoc.data()?["user_email"] ?? "-";
+
       final uploadResult = await uploadLampiran(
         bytes: lampiranBytes,
         fileName: fileName,
         userId: userId,
       );
 
-      // Simpan ke Firestore
       await _firestore.collection("pengajuan_sakit").add({
         "userId": userId,
         "userName": userName,
+        "emailUser": emailUser,
         "userRole": userRole,
         "tanggalMulai": Timestamp.fromDate(startDate),
         "tanggalSelesai": Timestamp.fromDate(endDate),
         "keterangan": keterangan,
         "lampiranUrl": uploadResult['lampiranUrl'],
         "storagePath": uploadResult['storagePath'],
+        "fileName": uploadResult['fileName'],
         "status": "Diajukan",
         "createdAt": FieldValue.serverTimestamp(),
       });
-    } on FirebaseException catch (e) {
-      debugPrint("Firebase Kirim Pengajuan Error: ${e.code} - ${e.message}");
-      rethrow;
     } catch (e) {
-      debugPrint("General Error in kirimPengajuan: $e");
+      debugPrint("Error kirimPengajuan Sakit: $e");
       rethrow;
     }
   }
@@ -104,5 +95,30 @@ class SakitService {
         .where("userId", isEqualTo: uid)
         .orderBy("createdAt", descending: true)
         .snapshots();
+  }
+
+  /// Hapus pengajuan sakit + lampiran
+  Future<void> hapusPengajuanSakit(String sakitId) async {
+    try {
+      final docRef = _firestore.collection("pengajuan_sakit").doc(sakitId);
+      final doc = await docRef.get();
+
+      if (!doc.exists) throw Exception("Pengajuan sakit tidak ditemukan.");
+
+      final data = doc.data();
+      final storagePath = data?['storagePath'] as String?;
+
+      if (storagePath != null && storagePath.isNotEmpty) {
+        final ref = _storage.ref().child(storagePath);
+        await ref.delete();
+        debugPrint("Lampiran berhasil dihapus: $storagePath");
+      }
+
+      await docRef.delete();
+      debugPrint("Dokumen sakit $sakitId berhasil dihapus");
+    } catch (e) {
+      debugPrint("Error hapusPengajuan Sakit: $e");
+      rethrow;
+    }
   }
 }

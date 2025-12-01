@@ -13,14 +13,13 @@ class IzinRekapanData {
   final DateTime tanggalSelesai;
   final String status;
   final String? lampiranUrl;
-  final String? lampiranName; // Asumsi nama file juga disimpan di Firestore
+  final String? lampiranName;
   final String keterangan;
-  final DateTime tanggalPengajuan; // Sudah menggunakan tipe DateTime
+  final DateTime tanggalPengajuan;
 
-  // Data user (gunakan data aktual dari user/token)
   final String userName;
   final String userEmail;
-  final String userClass; // Atau jabatan/divisi/userRole
+  final String userClass;
 
   IzinRekapanData({
     required this.id,
@@ -46,11 +45,9 @@ class RekapanIzinPage extends StatefulWidget {
 }
 
 class _RekapanIzinPageState extends State<RekapanIzinPage> {
-  // Ganti _cutiService menjadi _izinService
   final _izinService = IzinService();
   final _auth = FirebaseAuth.instance;
 
-  // Placeholder untuk data pengguna, Anda harus mengambil ini dari database
   late Future<Map<String, String>> _userDataFuture;
 
   @override
@@ -59,7 +56,6 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
     _userDataFuture = _fetchUserData();
   }
 
-  // Fungsi untuk mengambil data pengguna (Nama, Email, Kelas/Role)
   Future<Map<String, String>> _fetchUserData() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
@@ -111,7 +107,6 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
             // ===== LIST REKAPAN IZIN =====
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                // Ganti getRekapanCuti menjadi getRekapanIzin
                 stream: _izinService.getRekapanIzin(currentUser.uid),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -140,23 +135,21 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
                     DateTime tglSelesai =
                         (data['tanggalSelesai'] as Timestamp).toDate();
 
-                    // MODIFIKASI: Menggunakan 'createdAt' dan null check
                     final createdAtTimestamp = data['createdAt'] as Timestamp?;
 
-                    // Gunakan createdAt jika tersedia, jika null gunakan tanggal hari ini
                     DateTime tglPengajuan =
                         createdAtTimestamp?.toDate() ?? DateTime.now();
 
                     return IzinRekapanData(
                       id: d.id,
                       perihal: data['perihal'] ??
-                          'Izin', // Menggunakan 'perihal' untuk izin
+                          'Izin',
                       tanggalMulai: tglMulai,
                       tanggalSelesai: tglSelesai,
                       status: data['status'] ?? "Diajukan",
                       lampiranUrl: data['lampiranUrl'],
                       lampiranName: data['fileName'] ??
-                          'Lampiran', // Asumsi nama file adalah 'fileName'
+                          'Lampiran',
                       keterangan: data['keterangan'] ?? '-',
                       tanggalPengajuan: tglPengajuan,
                       userName: userData['userName']!,
@@ -170,7 +163,6 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
                         horizontal: 16, vertical: 12),
                     itemCount: izinList.length,
                     itemBuilder: (context, index) {
-                      // Ganti _buildCutiRekapanTile menjadi _buildIzinRekapanTile
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: _buildIzinRekapanTile(izinList[index], context),
@@ -188,14 +180,14 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'disetujui':
+      case 'Disetujui':
         return Colors.green.shade600;
-      case 'ditolak':
+      case 'Ditolak':
         return Colors.red.shade600;
-      case 'diajukan':
+      case 'Diajukan':
         return Colors.orange.shade600;
       default:
-        return Colors.grey.shade600; // Untuk status lain/proses
+        return Colors.grey.shade600;
     }
   }
 
@@ -229,17 +221,14 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
     return "$namaHari, ${date.day} $namaBulan ${date.year}";
   }
 
-  // Fungsi untuk menampilkan snackbar/pesan
   void _showMessage(String msg) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
-  // Fungsi Hapus Pengajuan (Menggunakan service izin)
   Future<void> _hapusPengajuan(String izinId) async {
     try {
-      // Panggil service untuk menghapus pengajuan di Firestore
       await _izinService.hapusPengajuanIzin(izinId);
       _showMessage("Pengajuan izin berhasil dihapus.");
     } catch (e) {
@@ -247,7 +236,6 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
     }
   }
 
-  // Dialog Konfirmasi Hapus
   void _showConfirmDeleteDialog(String izinId) {
     showDialog(
       context: context,
@@ -274,7 +262,6 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
     );
   }
 
-  // Fungsi untuk membuka lampiran (Web/Mobile)
   Future<void> openPdf(String url, BuildContext context) async {
     if (kIsWeb) {
       html.window.open(url, '_blank');
