@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
-import '../screen/qr_scanner_screen.dart';
-import '../screen/employee_detail_screen.dart';
-import 'profile_page.dart';
-import 'package:languo/pages/kehadiran_page.dart';
-import 'package:languo/pages/pengajuan_sakit_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:languo/users/rekapan/kehadiran_page.dart';
 import '../models/user_model.dart';
-import 'package:languo/pages/pengajuan_cuti_page.dart';
-import 'package:languo/pages/pengajuan_izin_page.dart';
-import 'package:languo/pages/rekapan_izin_page.dart';
+import 'profile_page.dart';
+import 'rekapan/cuti_page.dart';
+import 'rekapan/izin_page.dart';
+import 'rekapan/sakit_page.dart';
+import 'verifikasi/cuti_page.dart';
+import 'verifikasi/izin_page.dart';
+import 'verifikasi/sakit_page.dart';
+import 'tambah_jadwal.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeAdmin extends StatefulWidget {
+  const HomeAdmin({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeAdmin> createState() => _HomeAdminState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomeAdminState extends State<HomeAdmin> {
   String? _lastScannedData;
 
   Future<UserModel?> getUserData() async {
@@ -165,27 +166,15 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
 
-        // Floating QR Button
+        // Floating Add Button
         Positioned(
           top: -20,
           child: GestureDetector(
             onTap: () async {
-              final result = await Navigator.push(
+              await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => QRScannerPage()),
+                MaterialPageRoute(builder: (context) => TambahJadwalPage()),
               );
-              if (!mounted) return;
-              if (result != null) {
-                setState(() {
-                  _lastScannedData = result;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("QR Code berhasil dipindai!"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
             },
             child: Container(
               width: 70,
@@ -203,7 +192,7 @@ class _HomePageState extends State<HomePage> {
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+                child: Icon(Icons.add, color: Colors.white, size: 38),
               ),
             ),
           ),
@@ -244,31 +233,16 @@ class _HomePageState extends State<HomePage> {
     return FutureBuilder<UserModel?>(
       future: getUserData(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Container(
-            padding: const EdgeInsets.fromLTRB(20, 40, 20, 50),
-            child: Text("Loading...",
-                style: TextStyle(color: Colors.white, fontSize: 16)),
-            decoration: const BoxDecoration(
-              color: Color(0xFF36546C),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-          );
-        }
-
-        final user = snapshot.data!;
+        final user = snapshot.data;
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 40, 20, 50),
+          padding: const EdgeInsets.fromLTRB(20, 40, 20, 60),
           decoration: const BoxDecoration(
             color: Color(0xFF36546C),
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
+              bottomLeft: Radius.circular(40),
+              bottomRight: Radius.circular(40),
             ),
           ),
           child: Row(
@@ -278,27 +252,20 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "HALLO!",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    Text("HAI!",
+                        style: TextStyle(color: Colors.white, fontSize: 12)),
                     const SizedBox(height: 4),
                     Text(
-                      user.userName,
+                      user?.userName ?? "-",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user.userRole,
+                      user?.userRole ?? "-",
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 11,
@@ -307,21 +274,13 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfilePage()),
-                  );
-                },
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white.withOpacity(0.3),
                 child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                  child: CircleAvatar(
-                    radius: 26,
-                    backgroundColor: Colors.grey[300],
-                    child: Icon(Icons.person, color: Colors.grey[600], size: 32),
-                  ),
+                  radius: 26,
+                  backgroundColor: Colors.grey[300],
+                  child: Icon(Icons.person, color: Colors.grey[600], size: 32),
                 ),
               ),
             ],
@@ -331,95 +290,74 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ===================== Menu Buttons =====================
+  // ===================== Menu Buttons (Kotak + Icon Bulat) =====================
   Widget _buildMenuButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-
-        // HADIR
-        _menuButton(Icons.person, "Hadir", () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const KehadiranPage()),
-          );
-        }),
-
-        // ========== IZIN (FIXED) ==========
-        _menuButton(Icons.description, "Izin", () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
-          );
-        }),
-
-        // SAKIT
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
-            );
-          },
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF36546C),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child:
-                    const Icon(Icons.medical_services, color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 8),
-              const Text("Sakit", style: TextStyle(fontSize: 12)),
-            ],
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: Color(0xFFE3E3E3),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-
-        // CUTI
-        _menuButton(Icons.schedule, "Cuti", () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PengajuanCutiPage()),
-          );
-        }),
-      ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _menuItem(Icons.accessibility_new, "Hadir", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KehadiranPage()),
+              );
+            }),
+            _menuItem(Icons.list_alt, "Izin", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VerifikasiIzin()),
+              );
+            }),
+            _menuItem(Icons.medical_services, "Sakit", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VerifikasiSakit()),
+              );
+            }),
+            _menuItem(Icons.schedule, "Cuti", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VerifikasiCuti()),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _menuButton(IconData icon, String title, VoidCallback onTap) {
+  Widget _menuItem(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Color(0xFF36546C),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 26),
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: Color(0xFF2C6E91),
+            child: Icon(icon, color: Colors.white, size: 30),
           ),
           const SizedBox(height: 8),
           Text(
-            title,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
         ],
       ),
@@ -450,7 +388,7 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   Text(
-                    "Kelas Mandarin",
+                    "Kehadiran",
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -476,33 +414,6 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const EmployeeDetailScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFE75636),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  minimumSize: Size(double.infinity, 48),
-                  elevation: 0,
-                ),
-                child: Text(
-                  "Detail",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -510,7 +421,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ===================== Aktivitas Chart =====================
+  // ===================== Chart =====================
   Widget _buildAktivitasChart() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -518,7 +429,7 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Aktivitas",
+            "Aktivitas Keseluruhan",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/cuti_service.dart';
+import '../../../services/sakit_service.dart';
 
-class RekapanCutiPage extends StatefulWidget {
-  const RekapanCutiPage({super.key});
+class RekapanSakitPage extends StatefulWidget {
+  const RekapanSakitPage({super.key});
 
   @override
-  State<RekapanCutiPage> createState() => _RekapanCutiPageState();
+  State<RekapanSakitPage> createState() => _RekapanSakitPageState();
 }
 
-class _RekapanCutiPageState extends State<RekapanCutiPage> {
-  final _cutiService = CutiService();
+class _RekapanSakitPageState extends State<RekapanSakitPage> {
+  final _sakitService = SakitService();
   final _auth = FirebaseAuth.instance;
 
   @override
@@ -43,7 +43,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
                     ),
                     const SizedBox(width: 15),
                     const Text(
-                      "Cuti",
+                      "Sakit",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -62,7 +62,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
           // LIST REKAPAN
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _cutiService.getRekapanCuti(currentUser!.uid),
+              stream: _sakitService.getRekapanSakit(currentUser!.uid),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
@@ -97,7 +97,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
 
                     return _buildRekapanCard(
                       kelas: d['kelas'] ?? '-',
-                      perihal: d['perihal'] ?? 'Cuti',
+                      perihal: d['perihal'] ?? 'Sakit',
                       tanggalIzin: _formatTanggal(tglMulai),
                       tanggalSelesai: _formatTanggal(tglSelesai),
                       status: d['status'] ?? 'Proses',

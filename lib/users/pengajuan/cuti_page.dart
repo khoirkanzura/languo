@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/cuti_service.dart';
+import '../../../services/cuti_service.dart';
 
 class PengajuanCutiPage extends StatefulWidget {
   const PengajuanCutiPage({super.key});

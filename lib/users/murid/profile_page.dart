@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../screen/qr_scanner_screen.dart';
-import 'home_page.dart';
-import 'auth_page.dart';
-import '../models/user_model.dart';
-import '../screen/edit_profile.dart';
+import '../../models/user_model.dart';
+import '../../screen/edit_profile.dart';
+import '../../routes/routes_manager.dart';
+import '../../screen/qr_scanner_screen.dart';
+import '../murid/home_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -307,7 +307,7 @@ class ProfilePage extends StatelessWidget {
                 onTap: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomePage()),
+                    MaterialPageRoute(builder: (_) => const HomeMurid()),
                   );
                 },
                 child: Column(
