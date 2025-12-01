@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:languo/users/rekapan/sakit_page.dart';
 import '../../../services/sakit_service.dart';
 
 class PengajuanSakitPage extends StatefulWidget {
@@ -307,10 +308,7 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
         _buildHeader(),
         _buildTabBar(),
         Expanded(
-          child: selectedTab == 0
-              ? _buildForm()
-              : const Center(
-                  child: Text("Buka halaman Rekapan untuk melihat data")),
+          child: selectedTab == 0 ? _buildForm() : const RekapanSakitPage(),
         )
       ]),
     );

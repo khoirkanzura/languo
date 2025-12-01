@@ -6,9 +6,6 @@ import 'package:universal_html/html.dart' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 
-// =========================================================
-// 1. MODEL DATA UNTUK REKAPAN
-// =========================================================
 class CutiRekapanData {
   final String id;
   final String perihal;
@@ -16,14 +13,13 @@ class CutiRekapanData {
   final DateTime tanggalSelesai;
   final String status;
   final String? lampiranUrl;
-  final String? lampiranName; // Asumsi nama file juga disimpan di Firestore
+  final String? lampiranName;
   final String keterangan;
-  final DateTime tanggalPengajuan; // Sudah menggunakan tipe DateTime
+  final DateTime tanggalPengajuan;
 
-  // Data user (gunakan data aktual dari user/token)
   final String userName;
   final String userEmail;
-  final String userClass; // Atau jabatan/divisi
+  final String userClass;
 
   CutiRekapanData({
     required this.id,
@@ -52,8 +48,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
   final _cutiService = CutiService();
   final _auth = FirebaseAuth.instance;
 
-  // Placeholder untuk data pengguna, Anda harus mengambil ini dari database
-  // sebelum membangun list
   late Future<Map<String, String>> _userDataFuture;
 
   @override
@@ -62,7 +56,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     _userDataFuture = _fetchUserData();
   }
 
-  // Fungsi untuk mengambil data pengguna (Nama, Email, Kelas)
   Future<Map<String, String>> _fetchUserData() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
@@ -73,19 +66,16 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
       };
     }
 
-    // Asumsi: Data user ada di koleksi 'users'
     final userDoc =
         await FirebaseFirestore.instance.collection("users").doc(userId).get();
     final data = userDoc.data();
 
     return {
-      // Ubah data?['nama'] menjadi data?['user_name'] atau kunci nama yang sesuai di koleksi 'users'
       'userName': data?['user_name'] ?? 'Data Tidak Ditemukan',
       'userEmail': data?['user_email'] ??
           _auth.currentUser!.email ??
           'Email Tidak Ditetapkan',
-      'userClass':
-          data?['kelas'] ?? 'Jabatan Tidak Ditetapkan', // Sesuaikan key
+      'userClass': data?['kelas'] ?? 'Jabatan Tidak Ditetapkan',
     };
   }
 
@@ -113,7 +103,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
 
         return Column(
           children: [
-            // ===== LIST REKAPAN =====
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _cutiService.getRekapanCuti(currentUser.uid),
@@ -144,23 +133,19 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
                     DateTime tglSelesai =
                         (data['tanggalSelesai'] as Timestamp).toDate();
 
-                    // MODIFIKASI: Menggunakan 'createdAt' dan null check
                     final createdAtTimestamp = data['createdAt'] as Timestamp?;
 
-                    // Gunakan createdAt jika tersedia, jika null gunakan tanggal hari ini
                     DateTime tglPengajuan =
                         createdAtTimestamp?.toDate() ?? DateTime.now();
 
                     return CutiRekapanData(
                       id: d.id,
-                      perihal: data['alasan'] ??
-                          'Cuti', // Gunakan 'alasan' sebagai perihal
+                      perihal: data['alasan'] ?? 'Cuti',
                       tanggalMulai: tglMulai,
                       tanggalSelesai: tglSelesai,
                       status: data['status'] ?? "Diajukan",
                       lampiranUrl: data['lampiranUrl'],
-                      lampiranName: data['fileName'] ??
-                          'Lampiran', // Asumsi nama file adalah 'fileName'
+                      lampiranName: data['fileName'] ?? 'Lampiran',
                       keterangan: data['keterangan'] ?? '-',
                       tanggalPengajuan: tglPengajuan,
                       userName: userData['userName']!,
@@ -189,10 +174,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     );
   }
 
-  // =========================================================
-  // 2. LOGIC DAN HELPER
-  // =========================================================
-
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'disetujui':
@@ -202,7 +183,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
       case 'diajukan':
         return Colors.orange.shade600;
       default:
-        return Colors.grey.shade600; // Untuk status lain/proses
+        return Colors.grey.shade600;
     }
   }
 
@@ -236,17 +217,14 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     return "$namaHari, ${date.day} $namaBulan ${date.year}";
   }
 
-  // Fungsi untuk menampilkan snackbar/pesan
   void _showMessage(String msg) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
-  // Fungsi Hapus Pengajuan
   Future<void> _hapusPengajuan(String cutiId) async {
     try {
-      // Panggil service untuk menghapus pengajuan di Firestore
       await _cutiService.hapusPengajuanCuti(cutiId);
       _showMessage("Pengajuan cuti berhasil dihapus.");
     } catch (e) {
@@ -254,7 +232,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     }
   }
 
-  // Dialog Konfirmasi Hapus
   void _showConfirmDeleteDialog(String cutiId) {
     showDialog(
       context: context,
@@ -281,7 +258,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     );
   }
 
-  // Fungsi untuk membuka lampiran (Web/Mobile)
   Future<void> openPdf(String url, BuildContext context) async {
     if (kIsWeb) {
       html.window.open(url, '_blank');
@@ -295,18 +271,12 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     }
   }
 
-  // =========================================================
-  // 3. WIDGET BARU: ExpansionTile untuk Rekapan
-  // =========================================================
-
   Widget _buildCutiRekapanTile(CutiRekapanData cuti, BuildContext context) {
     String periodeCuti =
         "${cuti.tanggalMulai.day}/${cuti.tanggalMulai.month}/${cuti.tanggalMulai.year} s.d. ${cuti.tanggalSelesai.day}/${cuti.tanggalSelesai.month}/${cuti.tanggalSelesai.year}";
 
-    // Status yang memungkinkan untuk dihapus: 'Diajukan'
     final bool canDelete = cuti.status.toLowerCase() == 'diajukan';
 
-    // Fungsi helper untuk badge status
     Widget statusBadge(String status, Color color) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -330,12 +300,10 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: EdgeInsets.zero,
       child: Theme(
-        // Hapus splash color default ExpansionTile
         data: Theme.of(context).copyWith(
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent),
         child: ExpansionTile(
-          // RINGKASAN (HEADER)
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           title: Text(
             cuti.perihal,
@@ -374,8 +342,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
               const Icon(Icons.arrow_drop_down, color: Colors.grey),
             ],
           ),
-
-          // DETAIL (BODY EXPANSION)
           children: [
             const Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
             Padding(
@@ -383,21 +349,16 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Detail User
                   _buildDetailRow("Nama", cuti.userName),
                   _buildDetailRow("Email", cuti.userEmail),
                   _buildDetailRow("Kelas/Jabatan", cuti.userClass),
-
                   const SizedBox(height: 12),
-                  // Detail Pengajuan
                   _buildDetailRow(
                       "Tgl Pengajuan", _formatTanggal(cuti.tanggalPengajuan)),
                   _buildDetailRow("Status", cuti.status,
                       isStatus: true, statusColor: _statusColor(cuti.status)),
                   _buildDetailRow("Keterangan",
                       cuti.keterangan.isEmpty ? "-" : cuti.keterangan),
-
-                  // Tombol Lampiran
                   if (cuti.lampiranUrl != null && cuti.lampiranUrl!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 15.0),
@@ -418,8 +379,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
                         ),
                       ),
                     ),
-
-                  // Tombol Hapus (Hanya jika status 'Diajukan')
                   if (canDelete)
                     Padding(
                       padding: const EdgeInsets.only(top: 10.0),
@@ -448,7 +407,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
     );
   }
 
-  // Widget Helper untuk baris detail
   Widget _buildDetailRow(String label, String value,
       {bool isStatus = false, Color statusColor = Colors.black}) {
     return Padding(
@@ -457,7 +415,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130, // Lebar label agar rapi
+            width: 130,
             child: Text(
               "$label:",
               style: const TextStyle(
