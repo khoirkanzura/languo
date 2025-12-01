@@ -9,8 +9,6 @@ class PengajuanCutiPage extends StatefulWidget {
 }
 
 class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
-  int selectedTab = 0; // 0 = Pengajuan, 1 = Rekapan
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,7 +16,6 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
       body: Column(
         children: [
           _buildHeader(),
-          _buildTabBar(),
           const SizedBox(height: 20),
           _menuKaryawan(),
         ],
@@ -61,68 +58,6 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ========================= TAB BAR BARU =========================
-  Widget _buildTabBar() {
-    return Transform.translate(
-      offset: const Offset(0, -30),
-      child: Container(
-        height: 55,
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(40),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final tabWidth = constraints.maxWidth / 2;
-
-            return Stack(
-              children: [
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 250),
-                  left: selectedTab == 0 ? 0 : tabWidth,
-                  child: Container(
-                    height: 55,
-                    width: tabWidth,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Colors.deepOrange, Colors.redAccent],
-                      ),
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    _tabButton("Pengajuan", 0),
-                    _tabButton("Rekapan", 1),
-                  ],
-                )
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _tabButton(String title, int index) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => selectedTab = index),
-        child: Center(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: selectedTab == index ? Colors.white : Colors.grey.shade700,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
       ),
     );
   }

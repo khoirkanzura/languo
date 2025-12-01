@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/izin_page.dart';
+import 'package:languo/admin/verifikasi/sakit_page.dart';
 
-class PengajuanIzinPage extends StatefulWidget {
-  const PengajuanIzinPage({super.key});
+class AdminSakitPage extends StatefulWidget {
+  const AdminSakitPage({super.key});
 
   @override
-  State<PengajuanIzinPage> createState() => _PengajuanIzinPageState();
+  State<AdminSakitPage> createState() => _AdminSakitPageState();
 }
 
-class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
+class _AdminSakitPageState extends State<AdminSakitPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,7 +51,7 @@ class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
           const Align(
             alignment: Alignment.center,
             child: Text(
-              "Izin",
+              "Sakit",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -89,7 +89,7 @@ class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const IzinPage(
+                      builder: (context) => const SakitPage(
                             role: 'Karyawan',
                           )),
                 );
@@ -134,7 +134,7 @@ class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const IzinPage(
+                      builder: (context) => const SakitPage(
                             role: 'Murid',
                           )),
                 );

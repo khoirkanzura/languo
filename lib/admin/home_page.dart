@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:languo/admin/pengajuanSakitPage.dart';
+import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/rekapan/kehadiran_page.dart';
 import 'package:languo/admin/PengajuanCutiPage.dart';
 import 'package:languo/admin/PengajuanIzinPage.dart';
@@ -325,7 +327,7 @@ class _HomeAdminState extends State<HomeAdmin> {
             _menuItem(Icons.medical_services, "Sakit", () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const VerifikasiSakit()),
+                MaterialPageRoute(builder: (_) => const AdminSakitPage()),
               );
             }),
             _menuItem(Icons.schedule, "Cuti", () {
