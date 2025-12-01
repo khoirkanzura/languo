@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/izin_service.dart';
+import '../rekapan/izin_page.dart';
 
 class PengajuanIzinPage extends StatefulWidget {
   const PengajuanIzinPage({super.key});
@@ -259,10 +260,7 @@ class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
         _buildHeader(),
         _buildTabBar(),
         Expanded(
-          child: selectedTab == 0
-              ? _buildForm()
-              : const Center(
-                  child: Text("Buka halaman Rekapan untuk melihat data")),
+          child: selectedTab == 0 ? _buildForm() : const RekapanIzinPage(),
         )
       ]),
     );

@@ -55,10 +55,10 @@ class IzinService {
     required String userId,
     required DateTime startDate,
     required DateTime endDate,
-    required String keterangan,
     required Uint8List lampiranBytes,
-    required String fileName, 
+    required String fileName,
     required String perihal,
+    String? keterangan,
   }) async {
     try {
       // Ambil profile user login
@@ -69,7 +69,8 @@ class IzinService {
 
       final userName = userDoc.data()?["user_name"] ?? "-";
       final userRole = userDoc.data()?["user_role"] ?? "-";
-    
+      final emailUser = userDoc.data()?["user_email"] ?? "-";
+
       final uploadResult = await uploadLampiran(
         bytes: lampiranBytes,
         fileName: fileName,
@@ -80,6 +81,7 @@ class IzinService {
       await _firestore.collection("pengajuan_izin").add({
         "userId": userId,
         "userName": userName,
+        "emailUser": emailUser,
         "userRole": userRole,
         "perihal": perihal,
         "tanggalMulai": Timestamp.fromDate(startDate),
@@ -102,9 +104,39 @@ class IzinService {
   /// Ambil rekapan izin berdasarkan user
   Stream<QuerySnapshot> getRekapanIzin(String uid) {
     return _firestore
-        .collection("pengajuan_Izin")
+        .collection("pengajuan_izin")
         .where("userId", isEqualTo: uid)
         .orderBy("createdAt", descending: true)
         .snapshots();
+  }
+
+  /// Hapus pengajuan cuti dari Firestore dan lampiran dari Storage
+  Future<void> hapusPengajuanIzin(String izinId) async {
+    try {
+      final izinDocRef = _firestore.collection('pengajuan_izin').doc(izinId);
+      final izinDoc = await izinDocRef.get();
+
+      if (!izinDoc.exists) {
+        throw Exception("Dokumen izin tidak ditemukan.");
+      }
+
+      final data = izinDoc.data();
+      final storagePath = data?['storagePath'] as String?;
+
+      if (storagePath != null && storagePath.isNotEmpty) {
+        final ref = _storage.ref().child(storagePath);
+        await ref.delete();
+        debugPrint("Lampiran berhasil dihapus dari Storage: $storagePath");
+      }
+
+      await izinDocRef.delete();
+      debugPrint("Dokumen izin $izinId berhasil dihapus.");
+    } on FirebaseException catch (e) {
+      debugPrint("Firebase Error saat menghapus pengajuan izin: $e");
+      rethrow;
+    } catch (e) {
+      debugPrint("General Error saat menghapus pengajuan izin: $e");
+      rethrow;
+    }
   }
 }
