@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:languo/admin/pengajuanSakitPage.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
-import 'package:languo/users/rekapan/kehadiran_page.dart';
 import 'package:languo/admin/PengajuanCutiPage.dart';
 import 'package:languo/admin/PengajuanIzinPage.dart';
 import '../models/user_model.dart';
@@ -13,6 +12,7 @@ import 'rekapan/izin_page.dart';
 import 'rekapan/sakit_page.dart';
 import 'verifikasi/sakit_page.dart';
 import 'tambah_jadwal.dart';
+import 'kehadiran_page.dart';
 
 class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});
