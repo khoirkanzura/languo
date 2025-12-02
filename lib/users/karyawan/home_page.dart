@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
-import 'profile_page.dart';
+import '../../profile/profile_page.dart';
 import '../../screen/qr_scanner_screen.dart';
 import '../../screen/employee_detail_screen.dart';
 import 'package:languo/users/rekapan/kehadiran_page.dart';

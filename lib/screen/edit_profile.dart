@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,12 +26,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final emailController = TextEditingController();
   final oldPassController = TextEditingController();
   final newPassController = TextEditingController();
-
+  String? displayedPhotoUrl;
   UserModel? user;
   bool isLoading = true;
   bool isSaving = false;
-
-  File? pickedImage;
+  Uint8List? pickedImageBytes;
+  bool isUploading = false;
 
   Future<void> loadUserData() async {
     final firebaseUser = FirebaseAuth.instance.currentUser;
@@ -44,7 +46,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       user = UserModel.fromFirestore(doc);
       nameController.text = user!.userName;
       emailController.text = user!.userEmail;
+      displayedPhotoUrl = user!.userPhoto;
     }
+
     setState(() => isLoading = false);
   }
 
@@ -57,36 +61,79 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> pickAndUploadImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-
     if (picked == null) return;
+    if (!(picked.mimeType?.startsWith("image/") ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Yang di-upload harus file gambar")),
+      );
+      return;
+    }
 
-    setState(() => pickedImage = File(picked.path));
+    setState(() => isUploading = true);
 
-    final firebaseUser = FirebaseAuth.instance.currentUser!;
-    final storageRef = FirebaseStorage.instance
-        .ref()
-        .child("profile_images")
-        .child("${firebaseUser.uid}.jpg");
+    try {
+      final firebaseUser = FirebaseAuth.instance.currentUser!;
+      final ext = picked.name.split('.').last.toLowerCase();
+      final userFolder = FirebaseStorage.instance
+          .ref()
+          .child("profile_images")
+          .child(firebaseUser.uid);
+      final storageRef = userFolder.child("profile.$ext");
+      // Hapus foto lama
+      try {
+        final list = await userFolder.listAll();
+        for (var item in list.items) {
+          await item.delete();
+        }
+      } catch (_) {}
 
-    await storageRef.putFile(pickedImage!);
-    final url = await storageRef.getDownloadURL();
+      String downloadURL = "";
 
-    await firebaseUser.updatePhotoURL(url);
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(firebaseUser.uid)
-        .update({"user_photo": url});
+      if (kIsWeb) {
+        pickedImageBytes = await picked.readAsBytes();
 
-    setState(() {}); // refresh foto
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Foto profil berhasil diperbarui")),
-    );
+        await storageRef.putData(
+          pickedImageBytes!,
+          SettableMetadata(contentType: picked.mimeType),
+        );
+      } else {
+        final file = File(picked.path);
+
+        pickedImageBytes = await file.readAsBytes();
+
+        await storageRef.putFile(
+          file,
+          SettableMetadata(contentType: picked.mimeType),
+        );
+      }
+
+      downloadURL = await storageRef.getDownloadURL();
+
+      // Update Firestore + Auth
+      await firebaseUser.updatePhotoURL(downloadURL);
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(firebaseUser.uid)
+          .update({"user_photo": downloadURL});
+
+      setState(() {
+        displayedPhotoUrl = downloadURL;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Foto profil berhasil diperbarui")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Gagal upload: $e")));
+    }
+
+    setState(() => isUploading = false);
   }
 
   Future<void> updateProfile() async {
     if (user == null) return;
     setState(() => isSaving = true);
-
     final firebaseUser = FirebaseAuth.instance.currentUser!;
     final newName = nameController.text.trim();
     final oldPass = oldPassController.text.trim();
@@ -119,7 +166,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
         await firebaseUser.reauthenticateWithCredential(cred);
         await firebaseUser.updatePassword(newPass);
-
         final encodedNew = hashPassword(newPass);
         await FirebaseFirestore.instance
             .collection("users")
@@ -142,6 +188,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider<Object>? profileImage;
+
+    if (pickedImageBytes != null) {
+      profileImage = MemoryImage(pickedImageBytes!);
+    } else if (user?.userPhoto != null && user!.userPhoto!.isNotEmpty) {
+      profileImage = NetworkImage(user!.userPhoto!);
+    } else {
+      profileImage = null;
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -231,52 +287,66 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       bottom: -50,
                       child: Center(
                         child: GestureDetector(
-                          onTap: pickAndUploadImage,
-                          child: Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 4,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: user?.userPhoto != null &&
-                                          user!.userPhoto!.isNotEmpty
-                                      ? NetworkImage(user!.userPhoto!)
-                                      : null,
-                                  backgroundColor: Colors.grey.shade300,
-                                  child: (user?.userPhoto == null ||
-                                          user!.userPhoto!.isEmpty)
-                                      ? Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: Colors.grey.shade600,
-                                        )
-                                      : null,
-                                ),
-                              ),
+                            onTap: pickAndUploadImage,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Foto profil + border putih
 
-                              // ICON EDIT CAMERA
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: const Color(0xFF36546C),
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 18,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 4),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: profileImage,
+                                    backgroundColor: Colors.grey.shade300,
+                                    child: profileImage == null
+                                        ? Icon(Icons.person,
+                                            size: 50,
+                                            color: Colors.grey.shade600)
+                                        : null,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
+
+                                // OVERLAY SPINNER SAAT UPLOAD
+
+                                if (isUploading)
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.45),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 3,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                // ICON EDIT CAMERA (selalu tampil)
+
+                                const Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: Color(0xFF36546C),
+                                    child: Icon(Icons.camera_alt,
+                                        color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ],
+                            )),
                       ),
                     ),
                   ],
