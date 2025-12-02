@@ -10,6 +10,8 @@ import 'package:languo/users/pengajuan/cuti_page.dart';
 import 'package:languo/users/pengajuan/izin_page.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/rekapan/izin_page.dart';
+import '../murid/home_page.dart';
+import '../../admin/home_page.dart';
 
 class HomeKaryawan extends StatefulWidget {
   const HomeKaryawan({super.key});
@@ -20,6 +22,36 @@ class HomeKaryawan extends StatefulWidget {
 
 class _HomeKaryawanState extends State<HomeKaryawan> {
   String? _lastScannedData;
+
+  Future<void> checkUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final role = doc.data()?['user_role']; // Ambil role
+
+    if (!mounted) return;
+
+    if (role != "Karyawan") {
+      if (role == "Murid") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeMurid()),
+        );
+      } else if (role == "Admin") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeAdmin()),
+        );
+      }
+    }
+  }
 
   Future<UserModel?> getUserData() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -203,7 +235,8 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+                child:
+                    Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
               ),
             ),
           ),
@@ -320,7 +353,8 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                   child: CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey[300],
-                    child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+                    child:
+                        Icon(Icons.person, color: Colors.grey[600], size: 32),
                   ),
                 ),
               ),
@@ -336,7 +370,6 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-
         // HADIR
         _menuButton(Icons.person, "Hadir", () {
           Navigator.push(
@@ -376,8 +409,8 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                     ),
                   ],
                 ),
-                child:
-                    const Icon(Icons.medical_services, color: Colors.white, size: 26),
+                child: const Icon(Icons.medical_services,
+                    color: Colors.white, size: 26),
               ),
               const SizedBox(height: 8),
               const Text("Sakit", style: TextStyle(fontSize: 12)),

@@ -64,6 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           "user_role": "Murid",
           "user_photo": null,
           "user_password": hashedPassword,
+          "sisa_cuti": 12,
           "created_at": FieldValue.serverTimestamp(),
         });
 
