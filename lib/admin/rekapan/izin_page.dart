@@ -156,7 +156,7 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Sakit <  ${widget.role}",
+                "Izin <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
