@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../screen/qr_scanner_screen.dart';
 import '../../screen/employee_detail_screen.dart';
 import '../../models/user_model.dart';
-import 'profile_page.dart';
+import '../../profile/profile_page.dart';
 import 'package:languo/users/rekapan/kehadiran_page.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/pengajuan/izin_page.dart';

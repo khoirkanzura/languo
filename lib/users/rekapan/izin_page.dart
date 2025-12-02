@@ -142,12 +142,14 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
 
                     return IzinRekapanData(
                       id: d.id,
-                      perihal: data['perihal'] ?? 'Izin',
+                      perihal: data['perihal'] ??
+                          'Izin',
                       tanggalMulai: tglMulai,
                       tanggalSelesai: tglSelesai,
                       status: data['status'] ?? "Diajukan",
                       lampiranUrl: data['lampiranUrl'],
-                      lampiranName: data['fileName'] ?? 'Lampiran',
+                      lampiranName: data['fileName'] ??
+                          'Lampiran',
                       keterangan: data['keterangan'] ?? '-',
                       tanggalPengajuan: tglPengajuan,
                       userName: userData['userName']!,
@@ -178,11 +180,11 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'disetujui':
+      case 'Disetujui':
         return Colors.green.shade600;
-      case 'ditolak':
+      case 'Ditolak':
         return Colors.red.shade600;
-      case 'diajukan':
+      case 'Diajukan':
         return Colors.orange.shade600;
       default:
         return Colors.grey.shade600;

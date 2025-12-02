@@ -27,11 +27,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final oldPassController = TextEditingController();
   final newPassController = TextEditingController();
   String? displayedPhotoUrl;
-
   UserModel? user;
   bool isLoading = true;
   bool isSaving = false;
-
   Uint8List? pickedImageBytes;
   bool isUploading = false;
 
@@ -50,6 +48,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       emailController.text = user!.userEmail;
       displayedPhotoUrl = user!.userPhoto;
     }
+
     setState(() => isLoading = false);
   }
 
@@ -63,7 +62,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-
     if (!(picked.mimeType?.startsWith("image/") ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Yang di-upload harus file gambar")),
@@ -76,14 +74,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final firebaseUser = FirebaseAuth.instance.currentUser!;
       final ext = picked.name.split('.').last.toLowerCase();
-
       final userFolder = FirebaseStorage.instance
           .ref()
           .child("profile_images")
           .child(firebaseUser.uid);
-
       final storageRef = userFolder.child("profile.$ext");
-
       // Hapus foto lama
       try {
         final list = await userFolder.listAll();
@@ -96,13 +91,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (kIsWeb) {
         pickedImageBytes = await picked.readAsBytes();
+
         await storageRef.putData(
           pickedImageBytes!,
           SettableMetadata(contentType: picked.mimeType),
         );
       } else {
         final file = File(picked.path);
+
         pickedImageBytes = await file.readAsBytes();
+
         await storageRef.putFile(
           file,
           SettableMetadata(contentType: picked.mimeType),
@@ -120,7 +118,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       setState(() {
         displayedPhotoUrl = downloadURL;
-        user = user?.copyWith(userPhoto: downloadURL);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +134,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> updateProfile() async {
     if (user == null) return;
     setState(() => isSaving = true);
-
     final firebaseUser = FirebaseAuth.instance.currentUser!;
     final newName = nameController.text.trim();
     final oldPass = oldPassController.text.trim();
@@ -170,7 +166,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
         await firebaseUser.reauthenticateWithCredential(cred);
         await firebaseUser.updatePassword(newPass);
-
         final encodedNew = hashPassword(newPass);
         await FirebaseFirestore.instance
             .collection("users")
@@ -193,6 +188,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider<Object>? profileImage;
+
+    if (pickedImageBytes != null) {
+      profileImage = MemoryImage(pickedImageBytes!);
+    } else if (user?.userPhoto != null && user!.userPhoto!.isNotEmpty) {
+      profileImage = NetworkImage(user!.userPhoto!);
+    } else {
+      profileImage = null;
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -287,6 +292,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               alignment: Alignment.center,
                               children: [
                                 // Foto profil + border putih
+
                                 Container(
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
@@ -306,6 +312,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
 
                                 // OVERLAY SPINNER SAAT UPLOAD
+
                                 if (isUploading)
                                   Container(
                                     width: 100,
@@ -327,6 +334,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   ),
 
                                 // ICON EDIT CAMERA (selalu tampil)
+
                                 const Positioned(
                                   bottom: 0,
                                   right: 0,

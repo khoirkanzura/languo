@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:languo/admin/pengajuanSakitPage.dart';
-import 'package:languo/users/pengajuan/sakit_page.dart';
-import 'package:languo/admin/PengajuanCutiPage.dart';
-import 'package:languo/admin/PengajuanIzinPage.dart';
+import 'package:languo/users/rekapan/kehadiran_page.dart';
 import '../models/user_model.dart';
-import 'profile_page.dart';
+
+import '../profile/profile_page.dart';
 import 'rekapan/cuti_page.dart';
 import 'rekapan/izin_page.dart';
 import 'rekapan/sakit_page.dart';
+import 'verifikasi/cuti_page.dart';
+import 'verifikasi/izin_page.dart';
 import 'verifikasi/sakit_page.dart';
 import 'tambah_jadwal.dart';
-import 'kehadiran_page.dart';
 
 class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});
@@ -321,19 +320,19 @@ class _HomeAdminState extends State<HomeAdmin> {
             _menuItem(Icons.list_alt, "Izin", () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
+                MaterialPageRoute(builder: (_) => const VerifikasiIzin()),
               );
             }),
             _menuItem(Icons.medical_services, "Sakit", () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdminSakitPage()),
+                MaterialPageRoute(builder: (_) => const VerifikasiSakit()),
               );
             }),
             _menuItem(Icons.schedule, "Cuti", () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const PengajuanCutiPage()),
+                MaterialPageRoute(builder: (_) => const VerifikasiCuti()),
               );
             }),
           ],

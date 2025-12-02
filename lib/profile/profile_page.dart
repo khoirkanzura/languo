@@ -4,8 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import '../../screen/edit_profile.dart';
 import '../../routes/routes_manager.dart';
-import 'home_page.dart';
-import 'tambah_jadwal.dart';
+import '../../screen/qr_scanner_screen.dart';
+import '../users/karyawan/home_page.dart';
+import '../users/murid/home_page.dart';
+import '../admin/home_page.dart';
+import 'notifikasi_page.dart';
+import 'pengaturan_page.dart';
+import 'faq_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -191,9 +196,40 @@ class ProfilePage extends StatelessWidget {
                       },
                     ),
                     _menuItem(
-                        Icons.notifications_outlined, "Notifikasi", () {}),
-                    _menuItem(Icons.settings_outlined, "Pengaturan", () {}),
-                    _menuItem(Icons.help_outline, "FAQ", () {}),
+                      Icons.notifications_outlined,
+                      "Notifikasi",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotifikasiPage()),
+                        );
+                      },
+                    ),
+
+                    _menuItem(
+                      Icons.settings_outlined,
+                      "Pengaturan",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PengaturanPage()),
+                        );
+                      },
+                    ),
+
+                    _menuItem(
+                      Icons.help_outline,
+                      "FAQ",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const FaqPage()),
+                        );
+                      },
+                    ),
+
                     const SizedBox(height: 30),
                     // Log Out Button
                     Padding(
@@ -283,6 +319,19 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
+  Widget getHomeByRole(String role) {
+    switch (role) {
+      case "Karyawan":
+        return const HomeKaryawan();
+      case "Admin":
+        return const HomeAdmin();
+      case "Murid":
+        return const HomeMurid();
+      default:
+        return const HomeKaryawan();
+    }
+  }
+
   Widget _buildBottomNav(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
@@ -304,10 +353,19 @@ class ProfilePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+                  // ambil data user dari Firestore
+                  final userDoc = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .get();
+
+                  final userRole = userDoc['user_role'];
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeAdmin()),
+                    MaterialPageRoute(builder: (_) => getHomeByRole(userRole)),
                   );
                 },
                 child: Column(
@@ -347,33 +405,34 @@ class ProfilePage extends StatelessWidget {
             ],
           ),
         ),
-        // Floating Add Button
         Positioned(
-          top: -20,
+          top: -28,
           child: GestureDetector(
-            onTap: () async {
-              await Navigator.push(
+            onTap: () {
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TambahJadwalPage()),
+                MaterialPageRoute(builder: (_) => const QRScannerPage()),
               );
             },
             child: Container(
-              width: 70,
-              height: 70,
+              width: 65,
+              height: 65,
               decoration: BoxDecoration(
-                color: Color(0xFF36546C),
+                color: const Color(0xFF36546C),
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
+                    color: const Color(0xFF36546C).withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 5),
                   ),
                 ],
-                border: Border.all(color: Colors.white, width: 4),
               ),
-              child: Center(
-                child: Icon(Icons.add, color: Colors.white, size: 38),
+              child: const Icon(
+                Icons.qr_code_scanner_rounded,
+                color: Colors.white,
+                size: 30,
               ),
             ),
           ),

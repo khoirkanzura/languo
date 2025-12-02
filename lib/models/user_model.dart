@@ -51,26 +51,4 @@ class UserModel {
       createdAt: (data['created_at'] as Timestamp).toDate(),
     );
   }
-
-  UserModel copyWith({
-    String? uid,
-    String? userName,
-    String? userEmail,
-    String? userPass,
-    String? userPhoto,
-    String? userRole,
-    num? sisaCuti,
-    DateTime? createdAt,
-  }) {
-    return UserModel(
-      uid: uid ?? this.uid,
-      userName: userName ?? this.userName,
-      userEmail: userEmail ?? this.userEmail,
-      userRole: userRole ?? this.userRole,
-      sisaCuti: sisaCuti ?? this.sisaCuti,
-      userPass: userPass ?? this.userPass,
-      userPhoto: userPhoto ?? this.userPhoto,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
 }
