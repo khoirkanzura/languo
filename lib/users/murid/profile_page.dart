@@ -121,35 +121,39 @@ class ProfilePage extends StatelessWidget {
                     bottom: -50,
                     child: Center(
                       child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 4,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 4,
                             ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundImage: user.userPhoto != null
-                              ? NetworkImage(user.userPhoto!)
-                              : null,
-                          backgroundColor: Colors.grey.shade300,
-                          child: user.userPhoto == null
-                              ? Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.grey.shade600,
-                                )
-                              : null,
-                        ),
-                      ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundImage: (user.userPhoto != null &&
+                                    user.userPhoto!.isNotEmpty)
+                                ? FadeInImage(
+                                    placeholder: const AssetImage(
+                                        "assets/placeholder.png"),
+                                    image: NetworkImage(user.userPhoto!),
+                                  ).image
+                                : null,
+                            child: (user.userPhoto != null &&
+                                    user.userPhoto!.isNotEmpty)
+                                ? null
+                                : Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey.shade600,
+                                  ),
+                          )),
                     ),
                   ),
                 ],
