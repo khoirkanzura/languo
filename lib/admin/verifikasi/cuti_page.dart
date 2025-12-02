@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:languo/admin/rekapan/cuti_page.dart';
 
 class CutiPage extends StatefulWidget {
-  const CutiPage({super.key});
+  final String role; // menerima role dari halaman sebelumnya
+
+  const CutiPage({super.key, required this.role});
 
   @override
   State<CutiPage> createState() => _CutiPageState();
@@ -12,33 +15,23 @@ class _CutiPageState extends State<CutiPage> {
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  List<Map<String, String>> dataCuti = [
+  List<Map<String, String>> dataIzin = [
     {
       "nama": "GERLY VAEYUNGFAN",
-      "mulai": "18 Nov 2025",
-      "selesai": "20 Nov 2025",
+      "tanggal": "11 November 2025",
       "email": "gerlyvaeyungfan@gmail.com",
       "alasan": "Mengambil Cuti Tahunan",
+      "file": "surat_izin2.pdf",
       "sisa": "3 hari",
-      "tanggal": "11 November 2025"
     },
     {
-      "nama": "ISMI ATIKA",
-      "mulai": "10 Nov 2025",
-      "selesai": "12 Nov 2025",
-      "email": "ismiatika@gmail.com",
-      "alasan": "Urusan Keluarga",
-      "sisa": "1 hari",
-      "tanggal": "7 November 2025"
-    },
-    {
-      "nama": "NITA ANGGRAINI",
-      "mulai": "5 Nov 2025",
-      "selesai": "6 Nov 2025",
-      "email": "nitaangg@gmail.com",
-      "alasan": "Sakit",
-      "sisa": "2 hari",
-      "tanggal": "3 November 2025"
+      "nama": "BUDI HARTONO",
+      "tanggal": "12 November 2025",
+      "email": "budi@gmail.com",
+      "alasan": "Izin pergi ke rumah sakit",
+      "jenis": "Izin Sakit",
+      "file": "surat_izin2.pdf",
+      "sisa": "2 hari"
     },
   ];
 
@@ -95,7 +88,7 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // ====================== POPUP CONFIRM TOLAK (MODIFIKASI) ======================
+  // ====================== POPUP KONFIRM TOLAK ======================
   void showRejectConfirm(BuildContext context) {
     showDialog(
       context: context,
@@ -110,17 +103,14 @@ class _CutiPageState extends State<CutiPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 10),
                 const Text(
-                  "Apakah Anda yakin\ningin menolak?",
+                  "Apakah Anda yakin ingin menolak?",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 30),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // TIDAK
                     Expanded(
                       child: InkWell(
                         onTap: () => Navigator.pop(context),
@@ -131,19 +121,14 @@ class _CutiPageState extends State<CutiPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            "Tidak",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color.fromARGB(221, 243, 239, 239)),
-                          ),
+                          child: const Text("Tidak",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
-                    // YA
                     Expanded(
                       child: InkWell(
                         onTap: () {
@@ -157,17 +142,15 @@ class _CutiPageState extends State<CutiPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            "Ya",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
+                          child: const Text("Ya",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
                       ),
                     ),
                   ],
-                ),
+                )
               ],
             ),
           ),
@@ -235,15 +218,15 @@ class _CutiPageState extends State<CutiPage> {
       body: Column(
         children: [
           header(),
-          tabBar(),
+          _buildTabBar(),
           searchBar(),
-          Expanded(child: cutiList()),
+          Expanded(child: CutiList()),
         ],
       ),
     );
   }
 
-  // HEADER
+  // HEADER (DINAMIC ROLE)
   Widget header() {
     return Container(
       height: 160,
@@ -255,60 +238,63 @@ class _CutiPageState extends State<CutiPage> {
           bottomRight: Radius.circular(40),
         ),
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 12, right: 20, top: 35),
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: const Icon(Icons.arrow_back,
-                      color: Colors.white, size: 26),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 26,
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  "Cuti  <  Karyawan",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                "Cuti  <  ${widget.role}",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   // TAB BAR
-  Widget tabBar() {
+  Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
       child: Container(
         height: 55,
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F3F5),
+          color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(40),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final tabWidth = constraints.maxWidth / 2;
+
             return Stack(
               children: [
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 250),
                   left: selectedTab == 0 ? 0 : tabWidth,
                   child: Container(
-                    width: tabWidth,
                     height: 55,
+                    width: tabWidth,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFFC6D51), Color(0xFFEA5A3C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        colors: [Colors.deepOrange, Colors.redAccent],
                       ),
                       borderRadius: BorderRadius.circular(40),
                     ),
@@ -316,10 +302,10 @@ class _CutiPageState extends State<CutiPage> {
                 ),
                 Row(
                   children: [
-                    tabButton("Pengajuan", 0),
-                    tabButton("Rekapan", 1),
+                    _tabButton("Pengajuan", 0),
+                    _tabButton("Rekapan", 1),
                   ],
-                ),
+                )
               ],
             );
           },
@@ -328,17 +314,37 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  Widget tabButton(String title, int index) {
+  Widget _tabButton(String title, int index) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => selectedTab = index),
+        onTap: () {
+          if (index == 1) {
+            String role = widget.role; // role dari halaman sebelumnya
+
+            // ⬇ jika role tidak ditemukan, default ke murid
+            if (role != "Admin" && role != "Karyawan" && role != "Murid") {
+              role = "Murid";
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RekapanAdminCutiPage(role: role),
+              ),
+            );
+            return;
+          }
+
+          // Untuk tab pengajuan
+          setState(() => selectedTab = index);
+        },
         child: Center(
           child: Text(
             title,
             style: TextStyle(
-              color: selectedTab == index ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
+              color: selectedTab == index ? Colors.white : Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
             ),
           ),
         ),
@@ -379,9 +385,9 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // LIST CUTI
-  Widget cutiList() {
-    var filtered = dataCuti
+  // LIST IZIN
+  Widget CutiList() {
+    var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
 
@@ -389,13 +395,12 @@ class _CutiPageState extends State<CutiPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return cutiCard(filtered[index], index);
+        return izinCard(filtered[index], index);
       },
     );
   }
 
-  // ITEM CARD
-  Widget cutiCard(Map<String, String> item, int index) {
+  Widget izinCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
     return AnimatedContainer(
@@ -409,7 +414,6 @@ class _CutiPageState extends State<CutiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER CARD
           Row(
             children: [
               const Icon(Icons.calendar_month, color: Color(0xFFDA3B26)),
@@ -422,10 +426,10 @@ class _CutiPageState extends State<CutiPage> {
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
-                    const Text("Periode Cuti :",
+                    const Text("Periode Izin :",
                         style: TextStyle(color: Colors.black54)),
                     Text(
-                      "${item["mulai"]} s.d ${item["selesai"]}",
+                      "${item["tanggal"]} s.d ${item["tanggal"]}",
                       style: const TextStyle(
                           color: Color(0xFFDA3B26),
                           fontWeight: FontWeight.bold),
@@ -471,25 +475,16 @@ class _CutiPageState extends State<CutiPage> {
               ),
             ],
           ),
-
-          // EXPANDED DETAIL
           if (isExpanded) ...[
             const SizedBox(height: 15),
-
             detailRow("Alamat Email :", item["email"]!),
             detailRow("Alasan :", item["alasan"]!),
             detailRow("Sisa cuti :", item["sisa"]!),
             detailRow("Tanggal :", item["tanggal"]!),
-
             const SizedBox(height: 15),
-
-            // FILE BUTTON
             GestureDetector(
-              onTap: () {
-                print("File dibuka");
-              },
+              onTap: () {},
               child: Container(
-                width: double.infinity,
                 height: 45,
                 decoration: BoxDecoration(
                   color: const Color(0xFFDA3B26),
@@ -505,24 +500,17 @@ class _CutiPageState extends State<CutiPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // TOLAK
                 GestureDetector(
                   onTap: () => showRejectConfirm(context),
                   child: buildActionButton("TOLAK", Colors.red),
                 ),
                 const SizedBox(width: 8),
-
-                // TERIMA
                 GestureDetector(
-                  onTap: () {
-                    showSuccessPopup(context);
-                  },
+                  onTap: () => showSuccessPopup(context),
                   child: buildActionButton("TERIMA", const Color(0xFF36546C)),
                 ),
               ],
@@ -542,9 +530,7 @@ class _CutiPageState extends State<CutiPage> {
           Text(label,
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value,
-              style: const TextStyle(fontSize: 13, color: Colors.black87)),
-          const SizedBox(height: 5),
+          Text(value, style: const TextStyle(fontSize: 13)),
         ],
       ),
     );
