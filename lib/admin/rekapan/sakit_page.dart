@@ -331,39 +331,49 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                 ),
               ),
 
-              // BADGE STATUS
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(item["status"]!,
-                    style: const TextStyle(color: Colors.white)),
-              ),
-
-              const SizedBox(width: 10),
-
-              // EXPAND BUTTON
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    expandedIndex = isExpanded ? -1 : index;
-                  });
-                },
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDA3B26),
-                    borderRadius: BorderRadius.circular(10),
+              // KOLOM KANAN (STATUS + PANAH)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // STATUS
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: badgeColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      item["status"]!,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
-                  child: Icon(
-                    isExpanded ? Icons.keyboard_arrow_up : Icons.arrow_forward,
-                    color: Colors.white,
+
+                  const SizedBox(height: 8),
+
+                  // PANAH
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        expandedIndex = isExpanded ? -1 : index;
+                      });
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDA3B26),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        isExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.arrow_forward,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -396,24 +406,29 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
 
             const SizedBox(height: 15),
 
-            // HAPUS
-            GestureDetector(
-              onTap: () => showDeleteConfirm(context),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  "Hapus",
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+            // HAPUS POSISI KANAN
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => showDeleteConfirm(context),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    "Hapus",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-            )
-          ]
+            ),
+          ],
         ],
       ),
     );

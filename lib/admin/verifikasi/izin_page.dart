@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:languo/admin/rekapan/izin_page.dart';
 
 class IzinPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya
@@ -104,7 +105,7 @@ class _IzinPageState extends State<IzinPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Apakah Anda yakin\ningin menolak?",
+                  "Apakah Anda yakin ingin menolak?",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
@@ -121,12 +122,10 @@ class _IzinPageState extends State<IzinPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            "Tidak",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
+                          child: const Text("Tidak",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
                       ),
                     ),
@@ -144,12 +143,10 @@ class _IzinPageState extends State<IzinPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            "Ya",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
+                          child: const Text("Ya",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
                       ),
                     ),
@@ -224,7 +221,7 @@ class _IzinPageState extends State<IzinPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: izinList()),
+          Expanded(child: IzinList()),
         ],
       ),
     );
@@ -321,7 +318,27 @@ class _IzinPageState extends State<IzinPage> {
   Widget _tabButton(String title, int index) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => selectedTab = index),
+        onTap: () {
+          if (index == 1) {
+            String role = widget.role; // role dari halaman sebelumnya
+
+            // ⬇ jika role tidak ditemukan, default ke murid
+            if (role != "Admin" && role != "Karyawan" && role != "Murid") {
+              role = "Murid";
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RekapanAdminIzinPage(role: role),
+              ),
+            );
+            return;
+          }
+
+          // Untuk tab pengajuan
+          setState(() => selectedTab = index);
+        },
         child: Center(
           child: Text(
             title,
@@ -370,7 +387,7 @@ class _IzinPageState extends State<IzinPage> {
   }
 
   // LIST IZIN
-  Widget izinList() {
+  Widget IzinList() {
     var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
@@ -398,7 +415,6 @@ class _IzinPageState extends State<IzinPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER CARD
           Row(
             children: [
               const Icon(Icons.calendar_month, color: Color(0xFFDA3B26)),
@@ -460,19 +476,13 @@ class _IzinPageState extends State<IzinPage> {
               ),
             ],
           ),
-
-          // EXPANDED DETAIL
           if (isExpanded) ...[
             const SizedBox(height: 15),
-
             detailRow("Alamat Email :", item["email"]!),
             detailRow("Alasan :", item["alasan"]!),
             detailRow("Sisa cuti :", item["sisa"]!),
             detailRow("Tanggal :", item["tanggal"]!),
-
             const SizedBox(height: 15),
-
-            // FILE BUTTON
             GestureDetector(
               onTap: () {},
               child: Container(
@@ -491,7 +501,6 @@ class _IzinPageState extends State<IzinPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -522,8 +531,7 @@ class _IzinPageState extends State<IzinPage> {
           Text(label,
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value,
-              style: const TextStyle(fontSize: 13, color: Colors.black87)),
+          Text(value, style: const TextStyle(fontSize: 13)),
         ],
       ),
     );

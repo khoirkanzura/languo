@@ -70,7 +70,10 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const CutiPage()),
+            MaterialPageRoute(
+                builder: (_) => CutiPage(
+                      role: 'Karyawan', // Hapus const
+                    )),
           );
         },
         child: Container(
@@ -93,7 +96,9 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CutiPage()),
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            CutiPage(role: 'Karyawan')), // Hapus const
                   );
                 },
                 child: Container(
