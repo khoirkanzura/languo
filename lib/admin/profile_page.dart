@@ -6,6 +6,7 @@ import '../../screen/edit_profile.dart';
 import '../../routes/routes_manager.dart';
 import 'home_page.dart';
 import 'tambah_jadwal.dart';
+import 'notifikasi_admin_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -191,7 +192,16 @@ class ProfilePage extends StatelessWidget {
                       },
                     ),
                     _menuItem(
-                        Icons.notifications_outlined, "Notifikasi", () {}),
+                      Icons.notifications_outlined,
+                      "Notifikasi",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotifikasiAdminPage()),
+                        );
+                      },
+                    ),
                     _menuItem(Icons.settings_outlined, "Pengaturan", () {}),
                     _menuItem(Icons.help_outline, "FAQ", () {}),
                     const SizedBox(height: 30),
