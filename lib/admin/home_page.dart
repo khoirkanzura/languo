@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:languo/admin/pengajuanSakitPage.dart';
+import 'package:languo/screen/buat_qr.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/admin/PengajuanCutiPage.dart';
 import 'package:languo/admin/PengajuanIzinPage.dart';
@@ -175,7 +176,7 @@ class _HomeAdminState extends State<HomeAdmin> {
             onTap: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TambahJadwalPage()),
+                MaterialPageRoute(builder: (context) => BuatQRPage()),
               );
             },
             child: Container(
