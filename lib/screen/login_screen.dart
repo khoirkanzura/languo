@@ -255,23 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 20),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't Have Account? "),
-                      GestureDetector(
-                        onTap: widget.onRegisterTap,
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20)
                 ],
               ),
             ),
