@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -35,6 +36,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
   }
 
   // ======================================================
+  // BATAS WAKTU ABSENSI
   bool _isWithinTimeRange() {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day, 7, 0);
@@ -42,13 +44,14 @@ class _BuatQRPageState extends State<BuatQRPage> {
     return now.isAfter(start) && now.isBefore(end);
   }
 
+  // DETEKSI SESI CHECK-IN / CHECK-OUT
   String _detectSession() {
     final now = DateTime.now();
     final checkInLimit = DateTime(now.year, now.month, now.day, 8, 0);
 
     if (now.isBefore(checkInLimit)) {
       return "check_in";
-    } else if (now.isAfter(DateTime(now.year, now.month, now.day, 17, 0))) {
+    } else if (now.isAfter(DateTime(now.year, now.month, now.day, 18, 0))) {
       return "invalid_checkout";
     } else {
       return "check_out";
@@ -56,6 +59,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
   }
 
   // ======================================================
+  // GENERATE QR DENGAN JSON
   Future<void> _refreshQR() async {
     try {
       final snapshot = await _firestore.collection('users').get();
@@ -72,11 +76,12 @@ class _BuatQRPageState extends State<BuatQRPage> {
 
       final session = _detectSession();
 
-      final newQR = {
+      /// 🔥 WAJIB: JSON ENCODE (bukan .toString())
+      final newQR = jsonEncode({
         'timestamp': DateTime.now().toIso8601String(),
         'session': session,
         'users': users,
-      }.toString();
+      });
 
       setState(() {
         qrData = newQR;
@@ -87,6 +92,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
   }
 
   // ======================================================
+  // HEADER UI
   Widget _buildHeader() {
     return Container(
       height: 160,
@@ -130,11 +136,11 @@ class _BuatQRPageState extends State<BuatQRPage> {
     final session = _detectSession();
 
     if (!_isWithinTimeRange()) {
-      return _errorScreen("Di luar jam absensi (07:00 - 17:00)");
+      return _errorScreen("Di luar jam absensi (07:00 - 20:00)");
     }
 
     if (session == "invalid_checkout") {
-      return _errorScreen("Tidak bisa checkout setelah jam 17.00");
+      return _errorScreen("Tidak bisa checkout setelah jam 20.00");
     }
 
     return Scaffold(
@@ -161,20 +167,26 @@ class _BuatQRPageState extends State<BuatQRPage> {
                             color: const Color(0xFF345A75),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            "SESI CHECK-IN",
-                            style: TextStyle(
+                          child: Text(
+                            session == "check_in"
+                                ? "SESI CHECK-IN"
+                                : "SESI CHECK-OUT",
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
                         ),
                         const SizedBox(height: 10),
+
+                        // TANGGAL
                         Text(
                           "Tanggal : ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 25),
+
+                        // QR CODE
                         Center(
                           child: qrData.isEmpty
                               ? const CircularProgressIndicator()
@@ -183,7 +195,10 @@ class _BuatQRPageState extends State<BuatQRPage> {
                                   size: qrSize,
                                 ),
                         ),
+
                         const SizedBox(height: 30),
+
+                        // WAKTU
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 30, vertical: 10),
@@ -199,6 +214,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
                                 color: Colors.white),
                           ),
                         ),
+
                         const SizedBox(height: 20),
                       ],
                     ),
