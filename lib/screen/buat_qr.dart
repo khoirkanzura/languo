@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -13,7 +14,27 @@ class BuatQRPage extends StatefulWidget {
 class _BuatQRPageState extends State<BuatQRPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Cek rentang absen
+  String qrData = "";
+  Timer? timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshQR();
+
+    timer = Timer.periodic(
+      const Duration(seconds: 10),
+      (t) => _refreshQR(),
+    );
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  // ======================================================
   bool _isWithinTimeRange() {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day, 7, 0);
@@ -21,7 +42,6 @@ class _BuatQRPageState extends State<BuatQRPage> {
     return now.isAfter(start) && now.isBefore(end);
   }
 
-  /// Tentukan sesi check in / check out
   String _detectSession() {
     final now = DateTime.now();
     final checkInLimit = DateTime(now.year, now.month, now.day, 8, 0);
@@ -35,8 +55,8 @@ class _BuatQRPageState extends State<BuatQRPage> {
     }
   }
 
-  /// Ambil data real-time dari Firestore sesuai AuthProvider
-  Future<String> _generateQRData() async {
+  // ======================================================
+  Future<void> _refreshQR() async {
     try {
       final snapshot = await _firestore.collection('users').get();
 
@@ -52,78 +72,153 @@ class _BuatQRPageState extends State<BuatQRPage> {
 
       final session = _detectSession();
 
-      return {
+      final newQR = {
         'timestamp': DateTime.now().toIso8601String(),
         'session': session,
         'users': users,
       }.toString();
+
+      setState(() {
+        qrData = newQR;
+      });
     } catch (e) {
       print("ERROR GENERATE QR: $e");
-      return "error";
     }
   }
 
+  // ======================================================
+  Widget _buildHeader() {
+    return Container(
+      height: 160,
+      decoration: const BoxDecoration(
+        color: Color(0xFF36546C),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: const Padding(
+                padding: EdgeInsets.only(left: 16),
+                child: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+              ),
+            ),
+          ),
+          const Align(
+            alignment: Alignment.center,
+            child: Text(
+              "QR Absensi",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ======================================================
   @override
   Widget build(BuildContext context) {
+    final session = _detectSession();
+
+    if (!_isWithinTimeRange()) {
+      return _errorScreen("Di luar jam absensi (07:00 - 17:00)");
+    }
+
+    if (session == "invalid_checkout") {
+      return _errorScreen("Tidak bisa checkout setelah jam 17.00");
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("QR Absensi Realtime Firebase"),
-      ),
-      body: Center(
-        child: FutureBuilder<String>(
-          future: _generateQRData(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
-            }
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double qrSize = constraints.maxWidth * 0.55;
+                qrSize = qrSize.clamp(180, 300);
 
-            if (!snapshot.hasData || snapshot.data == "error") {
-              return const Text(
-                "Gagal memuat data QR",
-                style: TextStyle(color: Colors.red, fontSize: 18),
-              );
-            }
-
-            final qrData = snapshot.data!;
-            final session = _detectSession();
-
-            if (!_isWithinTimeRange()) {
-              return const Text(
-                "Di luar jam absensi (07:00 - 17:00)",
-                style: TextStyle(color: Colors.red, fontSize: 18),
-              );
-            }
-
-            if (session == "invalid_checkout") {
-              return const Text(
-                "Tidak bisa checkout setelah jam 17.00",
-                style: TextStyle(color: Colors.red, fontSize: 18),
-              );
-            }
-
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                QrImageView(
-                  data: qrData,
-                  size: 280,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  session == "check_in" ? "Sesi: Check In" : "Sesi: Check Out",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF345A75),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "SESI CHECK-IN",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Tanggal : ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 25),
+                        Center(
+                          child: qrData.isEmpty
+                              ? const CircularProgressIndicator()
+                              : QrImageView(
+                                  data: qrData,
+                                  size: qrSize,
+                                ),
+                        ),
+                        const SizedBox(height: 30),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.deepOrange,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "Waktu : ${DateFormat('HH:mm:ss').format(DateTime.now())}",
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "Waktu: ${DateFormat('HH:mm').format(DateTime.now())}",
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            );
-          },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ======================================================
+  Widget _errorScreen(String text) {
+    return Scaffold(
+      body: Center(
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.red, fontSize: 18),
         ),
       ),
     );
