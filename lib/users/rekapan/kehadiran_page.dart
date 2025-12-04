@@ -15,14 +15,12 @@ class _KehadiranPageState extends State<KehadiranPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  // Format tampilan tanggal misal: Jum, 30 Okt 2025
   String _formatDisplayDate(String isoDate) {
     try {
       final dt = DateTime.parse(isoDate);
-      // gunakan intl untuk lokal & format
-      final dayShort = DateFormat.E('id').format(dt); // e.g., Jum
+      final dayShort = DateFormat.E('id').format(dt);
       final dayNum = DateFormat('dd').format(dt);
-      final monthShort = DateFormat.MMM('id').format(dt); // Okt
+      final monthShort = DateFormat.MMM('id').format(dt);
       final year = DateFormat('yyyy').format(dt);
       return "$dayShort, $dayNum $monthShort $year";
     } catch (_) {
@@ -30,7 +28,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
     }
   }
 
-  // Warna jam masuk
   Color _getJamColor(String jam) {
     if (jam.isEmpty) return Colors.grey;
     if (jam.contains("--")) return Colors.grey;
@@ -38,7 +35,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
       final parts = jam.split(":");
       final h = int.parse(parts[0]);
       final m = int.parse(parts[1]);
-      // <= 08:10 -> tepat waktu
       if (h < 8 || (h == 8 && m <= 10)) {
         return const Color(0xFF4CAF50);
       }
@@ -68,7 +64,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
     }
   }
 
-  // Hitung status dari check_in (string 'HH:mm')
   String _computeStatusFromCheckIn(String checkIn, String checkOut) {
     if (checkIn.isEmpty) return 'Belum';
     if (checkOut.isEmpty) return 'Proses';
@@ -83,7 +78,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
     }
   }
 
-  // Update check_out untuk dokumen yang dipilih
   Future<void> _performCheckOut(
       String docId, Map<String, dynamic> docData) async {
     final now = DateTime.now();
@@ -93,7 +87,13 @@ class _KehadiranPageState extends State<KehadiranPage> {
     final checkIn = (docData['check_in'] ?? '').toString();
     String newStatus = _computeStatusFromCheckIn(checkIn, timeNow);
 
-    await _firestore.collection('absensi').doc(docId).update({
+    // 🔥 PATH FIRESTORE YANG BENAR
+    await _firestore
+        .collection('absensi')
+        .doc(currentUserId)
+        .collection('absensi')
+        .doc(docId)
+        .update({
       'check_out': timeNow,
       'status': newStatus,
       'updated_at': FieldValue.serverTimestamp(),
@@ -107,7 +107,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  // Dialog countdown
   void _showCheckOutDialog(String docId, Map<String, dynamic> docData) {
     showDialog(
       context: context,
@@ -131,10 +130,10 @@ class _KehadiranPageState extends State<KehadiranPage> {
       );
     }
 
-    // Stream: ambil semua absensi user ini, urutkan descending berdasarkan date
     final stream = _firestore
         .collection('absensi')
-        .where('user_id', isEqualTo: currentUserId)
+        .doc(currentUserId)
+        .collection('absensi')
         .orderBy('date', descending: true)
         .snapshots();
 
@@ -144,7 +143,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
@@ -184,7 +183,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
 
             const SizedBox(height: 16),
 
-            // List Data
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: stream,
@@ -195,6 +193,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   final docs = snapshot.data?.docs ?? [];
                   if (docs.isEmpty) {
                     return const Center(
@@ -211,9 +210,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
                       final checkIn = (data['check_in'] ?? '').toString();
                       final checkOut = (data['check_out'] ?? '').toString();
                       final date = (data['date'] ?? '').toString();
-                      final kelas =
-                          (data['kelas'] ?? 'Kelas').toString(); // optional
-                      // compute status dynamic in case Firestore not updated
+                      final kelas = (data['kelas'] ?? 'Kelas').toString();
                       final status = (data['status'] ??
                               _computeStatusFromCheckIn(checkIn, checkOut))
                           .toString();
@@ -267,7 +264,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Kelas dan Tanggal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -289,14 +285,10 @@ class _KehadiranPageState extends State<KehadiranPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // Row 2: Icon + Jam, Status, Button
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Location
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -310,8 +302,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Jam Masuk & Keluar
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,14 +350,10 @@ class _KehadiranPageState extends State<KehadiranPage> {
                   ],
                 ),
               ),
-
               const SizedBox(width: 12),
-
-              // Status dan Button
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Status Badge
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -385,8 +371,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Check Out Button
                   ElevatedButton(
                     onPressed: status == 'Proses'
                         ? () => _showCheckOutDialog(docId, rawData)
@@ -423,7 +407,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
   }
 }
 
-// Widget Dialog dengan Countdown Timer
 class _CountdownDialog extends StatefulWidget {
   final VoidCallback onCheckOut;
 
@@ -434,7 +417,7 @@ class _CountdownDialog extends StatefulWidget {
 }
 
 class _CountdownDialogState extends State<_CountdownDialog> {
-  int _remainingSeconds = 60; // 1 menit = 60 detik
+  int _remainingSeconds = 60;
   Timer? _timer;
 
   @override
@@ -451,7 +434,7 @@ class _CountdownDialogState extends State<_CountdownDialog> {
         });
       } else {
         _timer?.cancel();
-        widget.onCheckOut(); // auto checkout
+        widget.onCheckOut();
       }
     });
   }
