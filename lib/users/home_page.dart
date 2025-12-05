@@ -1,51 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:languo/users/karyawan/home_page.dart';
-import '../../models/user_model.dart';
-import '../../profile/profile_page.dart';
-import '../../screen/qr_scanner_screen.dart';
-import '../../screen/maps.dart';
+import '../models/user_model.dart';
+import '../profile/profile_page.dart';
+import '../screen/qr_scanner_screen.dart';
+import '../screen/maps.dart';
 import 'package:languo/users/rekapan/kehadiran_page.dart';
 import 'package:languo/users/pengajuan/cuti_page.dart';
 import 'package:languo/users/pengajuan/izin_page.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/rekapan/izin_page.dart';
-import '../dosen/home_page.dart';
-import '../../admin/home_page.dart';
+import 'package:languo/users/rekapan/sakit_page.dart';
+import 'package:languo/users/rekapan/cuti_page.dart ';
+import '../admin/home_page.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-class HomeDosen extends StatefulWidget {
-  const HomeDosen({super.key});
+class HomePageUser extends StatefulWidget {
+  const HomePageUser({super.key});
 
   @override
-  State<HomeDosen> createState() => _HomeDosenState();
+  State<HomePageUser> createState() => _HomePageUserState();
 }
 
-class _HomeDosenState extends State<HomeDosen> {
+class _HomePageUserState extends State<HomePageUser> {
   String? _lastScannedData;
-
   bool _localeReady = false;
 
   @override
   void initState() {
     super.initState();
 
-    // FIX AREA ————————
     initializeDateFormatting('id_ID', null).then((_) {
       if (mounted) {
-        setState(() {
-          _localeReady = true;
-        });
+        setState(() => _localeReady = true);
       }
     });
-    // ————————————————
 
-    checkUserRole();
+    // Cek jika Admin → redirect ke HomeAdmin
+    _redirectIfAdmin();
   }
 
-  Future<void> checkUserRole() async {
+  Future<void> _redirectIfAdmin() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -56,22 +52,15 @@ class _HomeDosenState extends State<HomeDosen> {
 
     if (!doc.exists) return;
 
-    final role = doc.data()?['user_role'];
+    final role = doc['user_role'];
 
     if (!mounted) return;
 
-    if (role != "Dosen") {
-      if (role == "Karyawan") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeKaryawan()),
-        );
-      } else if (role == "Admin") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeAdmin()),
-        );
-      }
+    if (role == "Admin") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeAdmin()),
+      );
     }
   }
 
@@ -85,7 +74,6 @@ class _HomeDosenState extends State<HomeDosen> {
         .get();
 
     if (!doc.exists) return null;
-
     return UserModel.fromFirestore(doc);
   }
 
@@ -409,36 +397,12 @@ class _HomeDosenState extends State<HomeDosen> {
             MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
           );
         }),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
-            );
-          },
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF36546C),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.medical_services,
-                    color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 8),
-              const Text("Sakit", style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
+        _menuButton(Icons.medical_services, "Sakit", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
+          );
+        }),
         _menuButton(Icons.schedule, "Cuti", () {
           Navigator.push(
             context,

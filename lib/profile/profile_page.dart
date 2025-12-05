@@ -4,8 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import '../../screen/edit_profile.dart';
 import '../../screen/qr_scanner_screen.dart';
-import '../users/karyawan/home_page.dart';
-import '../users/dosen/home_page.dart';
+import '../users/home_page.dart';
 import '../admin/home_page.dart';
 import 'notifikasi_page.dart';
 import 'faq_page.dart';
@@ -316,14 +315,10 @@ class ProfilePage extends StatelessWidget {
 
   Widget getHomeByRole(String role) {
     switch (role) {
-      case "Karyawan":
-        return const HomeKaryawan();
       case "Admin":
         return const HomeAdmin();
-      case "Dosen":
-        return const HomeDosen();
       default:
-        return const HomeKaryawan();
+        return const HomePageUser();
     }
   }
 
