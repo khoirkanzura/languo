@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/sakit_page.dart';
+import 'package:languo/admin/verifikasi/sakit_verifikasi_page.dart';
 
 class AdminSakitPage extends StatefulWidget {
   const AdminSakitPage({super.key});

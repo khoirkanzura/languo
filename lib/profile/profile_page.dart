@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import '../../screen/edit_profile.dart';
-import '../../routes/routes_manager.dart';
 import '../../screen/qr_scanner_screen.dart';
 import '../users/karyawan/home_page.dart';
 import '../users/dosen/home_page.dart';
 import '../admin/home_page.dart';
 import 'notifikasi_page.dart';
 import 'faq_page.dart';
+import 'faq_admin_page.dart';
 import 'logout_dialog.dart'; // PASTIKAN INI ADA!
 
 class ProfilePage extends StatelessWidget {
@@ -211,15 +211,23 @@ class ProfilePage extends StatelessWidget {
                       Icons.help_outline,
                       "FAQ",
                       () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const FaqPage()),
-                        );
+                        if (user.userRole == "Admin") {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const FaqAdminPage()),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const FaqPage()),
+                          );
+                        }
                       },
                     ),
 
                     const SizedBox(height: 30),
-                    
+
                     // ========================================
                     // TOMBOL LOG OUT - GUNAKAN LogoutDialog.show()
                     // ========================================

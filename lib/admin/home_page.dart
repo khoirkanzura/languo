@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:languo/admin/pengajuanSakitPage.dart';
+import 'package:languo/admin/pengajuan/sakit_pengajuan_role_page.dart';
 import 'package:languo/screen/buat_qr.dart';
-import 'package:languo/users/pengajuan/sakit_page.dart';
-import 'package:languo/admin/PengajuanCutiPage.dart';
+import 'package:languo/admin/pengajuan/cuti_pengajuan_role_page.dart';
 import 'package:languo/admin/PengajuanIzinPage.dart';
 import '../models/user_model.dart';
-import 'profile_page.dart';
-import 'rekapan/cuti_page.dart';
-import 'rekapan/izin_page.dart';
-import 'rekapan/sakit_page.dart';
-import 'verifikasi/sakit_page.dart';
+import '../profile/profile_page.dart';
+import 'rekapan/cuti_rekapan_page.dart';
+import 'rekapan/izin_rekapan_page.dart';
+import 'rekapan/sakit_rekapan_page.dart';
+import 'verifikasi/sakit_verifikasi_page.dart';
 import 'tambah_jadwal.dart';
-import 'kehadiran_page.dart';
+import 'rekapan/kehadiran_rekapan_page.dart';
 
 class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});
