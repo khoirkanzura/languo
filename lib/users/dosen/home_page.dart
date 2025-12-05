@@ -354,8 +354,13 @@ class _HomeDosenState extends State<HomeDosen> {
                   child: CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey[300],
-                    child:
-                        Icon(Icons.person, color: Colors.grey[600], size: 32),
+                    backgroundImage:
+                        (user.userPhoto != null && user.userPhoto!.isNotEmpty)
+                            ? NetworkImage(user.userPhoto!)
+                            : null,
+                    child: (user.userPhoto == null || user.userPhoto!.isEmpty)
+                        ? Icon(Icons.person, color: Colors.grey[600], size: 32)
+                        : null,
                   ),
                 ),
               ),

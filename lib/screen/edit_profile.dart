@@ -62,9 +62,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-    if (!(picked.mimeType?.startsWith("image/") ?? false)) {
+
+// Cek via mimeType atau ekstensi
+    final mime = picked.mimeType;
+    final ext = picked.name.toLowerCase(); // mengambil nama file
+
+    if (!((mime?.startsWith("image/") ?? false) ||
+        ext.endsWith(".png") ||
+        ext.endsWith(".jpg") ||
+        ext.endsWith(".jpeg") ||
+        ext.endsWith(".webp") ||
+        ext.endsWith(".gif"))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Yang di-upload harus file gambar")),
+        const SnackBar(content: Text("Yang di-upload harus file")),
       );
       return;
     }
