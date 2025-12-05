@@ -203,7 +203,6 @@ class ProfilePage extends StatelessWidget {
                         );
                       },
                     ),
-                    _menuItem(Icons.settings_outlined, "Pengaturan", () {}),
                     _menuItem(Icons.help_outline, "FAQ", () {}),
                     const SizedBox(height: 30),
                     
