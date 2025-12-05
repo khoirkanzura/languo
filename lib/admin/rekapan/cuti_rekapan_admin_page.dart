@@ -213,7 +213,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => CutiPage(role: widget.role),
+                builder: (_) => VerifikasiCutiPage(role: widget.role),
               ),
             );
           } else {

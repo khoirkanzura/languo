@@ -225,7 +225,7 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => IzinPage(role: widget.role),
+                builder: (_) => VerifikasiIzinPage(role: widget.role),
               ),
             );
           } else {

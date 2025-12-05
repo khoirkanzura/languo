@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:languo/admin/rekapan/cuti_rekapan_admin_page.dart';
 
-class CutiPage extends StatefulWidget {
+class VerifikasiCutiPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya
 
-  const CutiPage({super.key, required this.role});
+  const VerifikasiCutiPage({super.key, required this.role});
 
   @override
-  State<CutiPage> createState() => _CutiPageState();
+  State<VerifikasiCutiPage> createState() => _VerifikasiCutiPageState();
 }
 
-class _CutiPageState extends State<CutiPage> {
+class _VerifikasiCutiPageState extends State<VerifikasiCutiPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;

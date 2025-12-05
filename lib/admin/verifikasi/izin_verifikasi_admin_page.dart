@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:languo/admin/rekapan/izin_rekapan_admin_page.dart';
 
-class IzinPage extends StatefulWidget {
+class VerifikasiIzinPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya
 
-  const IzinPage({super.key, required this.role});
+  const VerifikasiIzinPage({super.key, required this.role});
 
   @override
-  State<IzinPage> createState() => _IzinPageState();
+  State<VerifikasiIzinPage> createState() => _VerifikasiIzinPageState();
 }
 
-class _IzinPageState extends State<IzinPage> {
+class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;

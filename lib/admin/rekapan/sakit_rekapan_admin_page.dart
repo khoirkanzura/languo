@@ -219,7 +219,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SakitPage(role: widget.role),
+                builder: (_) => VerifikasiSakitPage(role: widget.role),
               ),
             );
           } else {

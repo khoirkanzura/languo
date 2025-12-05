@@ -73,7 +73,7 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CutiPage(role: role),
+              builder: (_) => VerifikasiCutiPage(role: role),
             ),
           );
         },

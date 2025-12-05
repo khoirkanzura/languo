@@ -73,7 +73,7 @@ class _AdminSakitPageState extends State<AdminSakitPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => SakitPage(role: role),
+              builder: (_) => VerifikasiSakitPage(role: role),
             ),
           );
         },

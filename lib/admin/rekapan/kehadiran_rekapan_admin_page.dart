@@ -90,8 +90,9 @@ class _KehadiranPageState extends State<KehadiranPage> {
 
   void updateFilteredList() {
     setState(() {
-      List<KehadiranData> currentList = selectedTab == 'Dosen' ? dosenList : karyawanList;
-      
+      List<KehadiranData> currentList =
+          selectedTab == 'Dosen' ? dosenList : karyawanList;
+
       if (searchController.text.isEmpty) {
         filteredList = currentList;
       } else {
@@ -119,7 +120,8 @@ class _KehadiranPageState extends State<KehadiranPage> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: const Text('Konfirmasi'),
-          content: const Text('Apakah Anda yakin ingin menghapus data kehadiran ini?'),
+          content: const Text(
+              'Apakah Anda yakin ingin menghapus data kehadiran ini?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -130,7 +132,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 setState(() {
                   KehadiranData itemToRemove = filteredList[index];
                   filteredList.removeAt(index);
-                  
+
                   if (selectedTab == 'Dosen') {
                     dosenList.removeWhere((data) => data == itemToRemove);
                   } else {
@@ -188,7 +190,8 @@ class _KehadiranPageState extends State<KehadiranPage> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
+                icon:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
                 onPressed: () => Navigator.of(context).pop(),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -402,7 +405,7 @@ class KehadiranCard extends StatelessWidget {
                 child: const Icon(Icons.person, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 12),
-              
+
               // Nama dan Email
               Expanded(
                 child: Column(
@@ -427,10 +430,11 @@ class KehadiranCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Status Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: data.statusMasuk == 'Terlambat'
                       ? const Color(0xFFEF5350)
@@ -448,7 +452,7 @@ class KehadiranCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 14),
 
           // Info Detail
@@ -475,7 +479,8 @@ class KehadiranCard extends StatelessWidget {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD32F2F),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -492,7 +497,7 @@ class KehadiranCard extends StatelessWidget {
     // Tentukan warna berdasarkan status waktu
     Color textColor = Colors.black87;
     FontWeight fontWeight = FontWeight.normal;
-    
+
     if (statusWaktu != null) {
       fontWeight = FontWeight.w600;
       if (statusWaktu == 'Terlambat') {

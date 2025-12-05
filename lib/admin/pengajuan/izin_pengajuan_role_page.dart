@@ -73,7 +73,7 @@ class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => IzinPage(role: role),
+              builder: (_) => VerifikasiIzinPage(role: role),
             ),
           );
         },

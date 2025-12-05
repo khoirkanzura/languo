@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:languo/admin/rekapan/sakit_rekapan_admin_page.dart';
 
-class SakitPage extends StatefulWidget {
+class VerifikasiSakitPage extends StatefulWidget {
   final String role;
 
-  const SakitPage({super.key, required this.role});
+  const VerifikasiSakitPage({super.key, required this.role});
 
   @override
-  State<SakitPage> createState() => _SakitPageState();
+  State<VerifikasiSakitPage> createState() => _VerifikasiSakitPageState();
 }
 
-class _SakitPageState extends State<SakitPage> {
+class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
