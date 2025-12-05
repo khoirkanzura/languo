@@ -54,7 +54,7 @@ class _SakitPageState extends State<SakitPage> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  "Pengajuan telah diterima",
+                  "Pengajuan telah disetujui",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),

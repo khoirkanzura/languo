@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/sakit_verifikasi_page.dart';
+import 'package:languo/admin/verifikasi/sakit_verifikasi_admin_page.dart';
 
 class AdminSakitPage extends StatefulWidget {
   const AdminSakitPage({super.key});
@@ -16,16 +16,16 @@ class _AdminSakitPageState extends State<AdminSakitPage> {
       body: Column(
         children: [
           _buildHeader(),
-          SizedBox(height: 20),
-          _menuKaryawan(),
-          SizedBox(height: 15),
-          _menuMurid(),
+          const SizedBox(height: 20),
+          _menuRole("Karyawan"),
+          const SizedBox(height: 15),
+          _menuRole("Dosen"),
         ],
       ),
     );
   }
 
-  // ========================= HEADER BARU =========================
+  // ========================= HEADER =========================
   Widget _buildHeader() {
     return Container(
       height: 160,
@@ -64,37 +64,36 @@ class _AdminSakitPageState extends State<AdminSakitPage> {
     );
   }
 
-  // ========================= MENU KARYAWAN =========================
-  Widget _menuKaryawan() {
+  // ===================== MENU DINAMIS (ROLE) =====================
+  Widget _menuRole(String role) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F8),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Karyawan",
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SakitPage(role: role),
             ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SakitPage(
-                            role: 'Karyawan',
-                          )),
-                );
-              },
-              child: Container(
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F8),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                role,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(
@@ -103,53 +102,8 @@ class _AdminSakitPageState extends State<AdminSakitPage> {
                 ),
                 child: const Icon(Icons.arrow_forward, color: Colors.white),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _menuMurid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F8),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Murid",
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SakitPage(
-                            role: 'Murid',
-                          )),
-                );
-              },
-              child: Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFC6D51),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Icon(Icons.arrow_forward, color: Colors.white),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

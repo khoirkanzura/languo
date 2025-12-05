@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/cuti_verifikasi_page.dart';
+import 'package:languo/admin/verifikasi/cuti_verifikasi_admin_page.dart';
 
 class RekapanAdminCutiPage extends StatefulWidget {
   final String role;
@@ -25,7 +25,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
       "alasan": "Mengambil Cuti Tahunan",
       "file": "surat_Cuti2.pdf",
       "sisa": "3 hari",
-      "status": "Diterima",
+      "status": "Disetujui",
     },
   ];
 
@@ -286,7 +286,8 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
   Widget CutiCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Diterima" ? Colors.green : Colors.red;
+    Color badgeColor =
+        item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),

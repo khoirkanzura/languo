@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/cuti_verifikasi_page.dart';
+import 'package:languo/admin/verifikasi/cuti_verifikasi_admin_page.dart';
 
 class PengajuanCutiPage extends StatefulWidget {
   const PengajuanCutiPage({super.key});
@@ -17,13 +17,15 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
         children: [
           _buildHeader(),
           const SizedBox(height: 20),
-          _menuKaryawan(),
+          _menuRole("Karyawan"),
+          const SizedBox(height: 15),
+          _menuRole("Dosen"),
         ],
       ),
     );
   }
 
-  // ========================= HEADER BARU =========================
+  // =========================== HEADER ============================
   Widget _buildHeader() {
     return Container(
       height: 160,
@@ -62,8 +64,8 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
     );
   }
 
-  // ========================= MENU KARYAWAN =========================
-  Widget _menuKaryawan() {
+  // ========================= MENU UNTUK PER ROLE =========================
+  Widget _menuRole(String role) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: InkWell(
@@ -71,9 +73,8 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => CutiPage(
-                      role: 'Karyawan', // Hapus const
-                    )),
+              builder: (_) => CutiPage(role: role),
+            ),
           );
         },
         child: Container(
@@ -85,31 +86,21 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Karyawan",
-                style: TextStyle(
+              Text(
+                role,
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            CutiPage(role: 'Karyawan')), // Hapus const
-                  );
-                },
-                child: Container(
-                  width: 45,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFC6D51),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Icon(Icons.arrow_forward, color: Colors.white),
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFC6D51),
+                  borderRadius: BorderRadius.circular(15),
                 ),
+                child: const Icon(Icons.arrow_forward, color: Colors.white),
               ),
             ],
           ),

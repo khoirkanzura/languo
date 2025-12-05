@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/izin_page.dart';
+import 'package:languo/admin/verifikasi/izin_verifikasi_admin_page.dart';
 
 class RekapanAdminIzinPage extends StatefulWidget {
   final String role;
@@ -26,7 +26,7 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
       "jenis": "Izin sakit",
       "file": "surat_izin2.pdf",
       "sisa": "2 hari",
-      "status": "Diterima",
+      "status": "Disetujui",
     },
     {
       "nama": "BUDI HARTONO",
@@ -298,7 +298,7 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
   Widget IzinCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Diterima" ? Colors.green : Colors.red;
+    Color badgeColor = item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../users/rekapan/kehadiran_rekapan_page.dart';
+import '../users/rekapan/kehadiran_rekapan_user_page.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});

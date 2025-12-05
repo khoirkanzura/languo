@@ -10,7 +10,7 @@ import '../profile/profile_page.dart';
 import 'rekapan/cuti_rekapan_admin_page.dart';
 import 'rekapan/izin_rekapan_admin_page.dart';
 import 'rekapan/sakit_rekapan_admin_page.dart';
-import 'verifikasi/sakit_verifikasi_page.dart';
+import 'verifikasi/sakit_verifikasi_admin_page.dart';
 import 'tambah_jadwal.dart';
 import 'rekapan/kehadiran_rekapan_admin_page.dart';
 

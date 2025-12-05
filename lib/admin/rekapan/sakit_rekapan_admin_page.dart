@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/sakit_verifikasi_page.dart';
+import 'package:languo/admin/verifikasi/sakit_verifikasi_admin_page.dart';
 
 class RekapanAdminSakitPage extends StatefulWidget {
   final String role;
@@ -23,7 +23,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
       "email": "kartika@gmail.com",
       "tanggal": "11 November 2025",
       "file": "surat_sakit.pdf",
-      "status": "Diterima",
+      "status": "Disetujui",
     },
     {
       "nama": "Elizabeth",
@@ -292,7 +292,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
   Widget SakitCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Diterima" ? Colors.green : Colors.red;
+    Color badgeColor = item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
