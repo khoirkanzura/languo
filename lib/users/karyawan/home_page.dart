@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
-import 'profile_page.dart';
+import '../../profile/profile_page.dart';
 import '../../screen/qr_scanner_screen.dart';
 import '../../screen/employee_detail_screen.dart';
 import 'package:languo/users/rekapan/kehadiran_page.dart';
@@ -10,7 +10,7 @@ import 'package:languo/users/pengajuan/cuti_page.dart';
 import 'package:languo/users/pengajuan/izin_page.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/rekapan/izin_page.dart';
-import '../murid/home_page.dart';
+import '../dosen/home_page.dart';
 import '../../admin/home_page.dart';
 
 class HomeKaryawan extends StatefulWidget {
@@ -39,10 +39,10 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
     if (!mounted) return;
 
     if (role != "Karyawan") {
-      if (role == "Murid") {
+      if (role == "Dosen") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeMurid()),
+          MaterialPageRoute(builder: (_) => const HomeDosen()),
         );
       } else if (role == "Admin") {
         Navigator.pushReplacement(
@@ -353,8 +353,13 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                   child: CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey[300],
-                    child:
-                        Icon(Icons.person, color: Colors.grey[600], size: 32),
+                    backgroundImage:
+                        (user.userPhoto != null && user.userPhoto!.isNotEmpty)
+                            ? NetworkImage(user.userPhoto!)
+                            : null,
+                    child: (user.userPhoto == null || user.userPhoto!.isEmpty)
+                        ? Icon(Icons.person, color: Colors.grey[600], size: 32)
+                        : null,
                   ),
                 ),
               ),

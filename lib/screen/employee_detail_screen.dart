@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:languo/screen/buat_qr.dart';
 import 'package:languo/screen/edit_profile.dart';
 import 'qr_scanner_screen.dart';
 
@@ -34,8 +35,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final materials = (employeeData['meetings'] as List)
-        .first['materials'] as List<dynamic>;
+    final materials =
+        (employeeData['meetings'] as List).first['materials'] as List<dynamic>;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -53,7 +54,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                   ),
                 ),
               ),
-
               Column(
                 children: [
                   // Header judul
@@ -203,8 +203,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color:
-                                              Colors.grey.withOpacity(0.25),
+                                          color: Colors.grey.withOpacity(0.25),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -227,7 +226,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                                           child: Text(
                                             material,
                                             style: const TextStyle(
-                                              fontWeight: FontWeight.bold, // ← BOLD
+                                              fontWeight:
+                                                  FontWeight.bold, // ← BOLD
                                               color: Colors.black87,
                                               fontSize: 14,
                                               height: 1.4,
@@ -253,7 +253,6 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
           ),
         ),
       ),
-
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -283,8 +282,8 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                 Navigator.pop(context);
               }),
               const SizedBox(width: 80),
-              _bottomItem(
-                  Icons.person_outline, "Profile", _currentIndex == 2, () {
+              _bottomItem(Icons.person_outline, "Profile", _currentIndex == 2,
+                  () {
                 setState(() => _currentIndex = 2);
                 Navigator.push(
                   context,
@@ -302,7 +301,7 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
             onTap: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => QRScannerPage()),
+                MaterialPageRoute(builder: (context) => BuatQRPage()),
               );
 
               if (!mounted) return;

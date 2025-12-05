@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../users/rekapan/kehadiran_page.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -10,408 +13,221 @@ class QRScannerPage extends StatefulWidget {
 }
 
 class _QRScannerPageState extends State<QRScannerPage> {
-  bool _hasPermission = false;
-  bool _isLoading = true;
-  bool _isProcessing = false;
-  Rect? _barcodeRect;
-  Size? _cameraSize;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _isScanned = false;
 
-  final MobileScannerController controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-  );
+  Future<void> _processQR(String qrText) async {
+    try {
+      final data = jsonDecode(qrText);
+      final session = data['session']; // "check_in" atau "check_out"
+      final timestamp = data['timestamp']; // optional payload
+      final users = data['users']; // list user objects
 
-  @override
-  void initState() {
-    super.initState();
-    _checkCameraPermission();
-  }
-
-  Future<void> _checkCameraPermission() async {
-    final status = await Permission.camera.status;
-
-    if (status.isGranted) {
-      setState(() {
-        _hasPermission = true;
-        _isLoading = false;
-      });
-    } else {
-      final result = await Permission.camera.request();
-      setState(() {
-        _hasPermission = result.isGranted;
-        _isLoading = false;
-      });
-
-      if (!result.isGranted) {
-        _showPermissionDialog();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _showMessage("Anda belum login!");
+        return;
       }
+      final currentUserId = user.uid;
+
+      // Ambil user_name dari koleksi users jika perlu
+      final userDoc =
+          await _firestore.collection('users').doc(currentUserId).get();
+      final currentUserName =
+          userDoc.exists ? (userDoc.data()?['user_name'] ?? '') : '';
+
+      // Per tanggal hari ini (yyyy-MM-dd)
+      final now = DateTime.now();
+      final dateKey =
+          "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+      // Cek apakah user ada di payload QR (opsional, tergantung QR)
+      bool userInPayload = false;
+      if (users is List) {
+        try {
+          userInPayload = users.any((u) => u['user_id'] == currentUserId);
+        } catch (_) {
+          userInPayload = false;
+        }
+      }
+
+      // Jika payload QR harus memuat user, periksa
+      if (users != null &&
+          users is List &&
+          users.isNotEmpty &&
+          !userInPayload) {
+        _showMessage("Anda tidak terdaftar pada QR ini!");
+        return;
+      }
+
+      final docId = "${currentUserId}_$dateKey";
+      final docRef = _firestore.collection('absensi').doc(docId);
+
+      final docSnap = await docRef.get();
+
+      final timeNow =
+          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
+      if (session == "check_in") {
+        if (docSnap.exists && (docSnap.data()?['check_in'] ?? '') != '') {
+          _showMessage("Anda sudah Check In hari ini!");
+          return;
+        }
+        // buat dokumen baru atau update check_in
+        await docRef.set({
+          "user_id": currentUserId,
+          "user_name": currentUserName,
+          "date": dateKey,
+          "check_in": timeNow,
+          "check_out": "", // belum
+          "status": "Proses",
+          "created_at": FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        _showMessage("Check In berhasil!", goToKehadiran: true);
+      } else if (session == "check_out") {
+        if (!docSnap.exists || (docSnap.data()?['check_in'] ?? '') == '') {
+          _showMessage("Belum melakukan Check In hari ini!");
+          return;
+        }
+        if ((docSnap.data()?['check_out'] ?? '') != '') {
+          _showMessage("Anda sudah Check Out hari ini!");
+          return;
+        }
+
+        // Tentukan status berdasar check_in time
+        final checkIn = docSnap.data()?['check_in'] ?? '';
+        String newStatus = 'Tepat Waktu';
+        if (checkIn != null && checkIn.toString().contains(':')) {
+          final parts = checkIn.toString().split(':');
+          final h = int.tryParse(parts[0]) ?? 0;
+          final m = int.tryParse(parts[1]) ?? 0;
+          // batas 08:10 -> terlambat jika lewat
+          if (h > 8 || (h == 8 && m > 10)) {
+            newStatus = 'Terlambat';
+          }
+        }
+
+        await docRef.update({
+          "check_out": timeNow,
+          "status": newStatus,
+          "updated_at": FieldValue.serverTimestamp(),
+        });
+
+        _showMessage("Check Out berhasil!", goToKehadiran: true);
+      } else {
+        _showMessage("Session QR tidak dikenali!");
+      }
+    } catch (e) {
+      // jika json decode gagal atau error lainnya
+      _showMessage("QR tidak valid!");
+    } finally {
+      // reset scanner setelah delay kecil supaya user bisa scan lagi jika perlu
+      Future.delayed(const Duration(milliseconds: 300), () {
+        setState(() => _isScanned = false);
+      });
     }
   }
 
-  void _showScanResult(String result) {
-    setState(() {
-      _barcodeRect = null;
+  void _showMessage(String text, {bool goToKehadiran = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (goToKehadiran) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const KehadiranPage()),
+        );
+      } else {
+        Navigator.pop(context);
+      }
     });
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.qr_code_scanner, color: Color(0xFF36546C)),
-            const SizedBox(width: 10),
-            const Text("Hasil Scan"),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Data QR Code:",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SelectableText(
-                result,
-                style: const TextStyle(fontSize: 15, fontFamily: "monospace"),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Waktu: ${DateTime.now().toString().substring(0, 19)}",
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _isProcessing = false);
-              controller.start();
-            },
-            child: const Text(
-              "Scan Lagi",
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context, result);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              side: const BorderSide(color: Colors.grey, width: 1),
-              elevation: 0,
-            ),
-            child: const Text("Selesai"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Izin Kamera Diperlukan"),
-        content: const Text("Aplikasi memerlukan akses kamera untuk memindai QR."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              openAppSettings();
-            },
-            child: const Text("Buka Pengaturan"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : _hasPermission
-              ? _buildScanner()
-              : _buildPermissionDenied(),
-    );
-  }
+      body: Stack(
+        children: [
+          MobileScanner(
+            onDetect: (capture) {
+              if (_isScanned) return;
 
-  Widget _buildScanner() {
-    return Stack(
-      children: [
-        // Background Scanner (camera feed)
-        MobileScanner(
-          controller: controller,
-          onDetect: (capture) {
-            final barcode = capture.barcodes.first;
-            final String? data = barcode.rawValue;
-
-            // Update posisi dan ukuran kotak sesuai barcode
-            if (barcode.corners != null && barcode.corners!.isNotEmpty) {
-              final corners = barcode.corners!;
-              
-              double minX = corners[0].dx;
-              double maxX = corners[0].dx;
-              double minY = corners[0].dy;
-              double maxY = corners[0].dy;
-
-              for (var corner in corners) {
-                if (corner.dx < minX) minX = corner.dx;
-                if (corner.dx > maxX) maxX = corner.dx;
-                if (corner.dy < minY) minY = corner.dy;
-                if (corner.dy > maxY) maxY = corner.dy;
+              final rawValue = capture.barcodes.first.rawValue;
+              if (rawValue != null) {
+                setState(() => _isScanned = true);
+                _processQR(rawValue);
               }
-
-              setState(() {
-                _barcodeRect = Rect.fromLTRB(minX, minY, maxX, maxY);
-              });
-            }
-
-            if (!_isProcessing && data != null) {
-              setState(() => _isProcessing = true);
-              controller.stop();
-              _showScanResult(data);
-            }
-          },
-        ),
-
-        // Kotak putih dinamis yang muncul saat ada barcode
-        if (_barcodeRect != null && !_isProcessing)
-          Positioned(
-            left: _barcodeRect!.left,
-            top: _barcodeRect!.top,
-            child: Container(
-              width: _barcodeRect!.width,
-              height: _barcodeRect!.height,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.white,
-                  width: 3,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  // Corner bracket kiri atas
-                  Positioned(
-                    top: -2,
-                    left: -2,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: Colors.white, width: 5),
-                          left: BorderSide(color: Colors.white, width: 5),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Corner bracket kanan atas
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: Colors.white, width: 5),
-                          right: BorderSide(color: Colors.white, width: 5),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Corner bracket kiri bawah
-                  Positioned(
-                    bottom: -2,
-                    left: -2,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.white, width: 5),
-                          left: BorderSide(color: Colors.white, width: 5),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Corner bracket kanan bawah
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.white, width: 5),
-                          right: BorderSide(color: Colors.white, width: 5),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            },
           ),
-
-        // UI Overlay
-        Column(
-          children: [
-            // Header
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ),
-            ),
-
-            // Title
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
+          Positioned(
+            top: 70,
+            left: 0,
+            right: 0,
+            child: const Center(
               child: Text(
                 "Scan QR Code",
                 style: TextStyle(
+                  fontSize: 26,
                   color: Colors.white,
-                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-
-            const Spacer(flex: 3),
-
-            // Text description
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
+          ),
+          Center(
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 4),
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 110,
+            left: 0,
+            right: 0,
+            child: const Center(
               child: Text(
-                "Pindahkan Kode QR untuk Absensi",
-                textAlign: TextAlign.center,
+                "Pindai Kode QR untuk Absensi",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
                 ),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            // Button Batal
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE75636),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
+          ),
+          Positioned(
+            bottom: 30,
+            left: 30,
+            right: 30,
+            child: SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Text(
-                    "Batal",
-                    style: TextStyle(
+                ),
+                child: const Text(
+                  "Batal",
+                  style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                      fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
-          ],
-        ),
-
-        // Processing overlay
-        if (_isProcessing)
-          Container(
-            color: Colors.black87,
-            child: const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPermissionDenied() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.camera_alt_outlined, size: 80, color: Colors.white54),
-          const SizedBox(height: 20),
-          const Text(
-            "Izin Kamera Ditolak",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              "Aplikasi memerlukan akses kamera untuk memindai QR code",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () {
-              openAppSettings();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE75636),
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "Buka Pengaturan",
-              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
         ],

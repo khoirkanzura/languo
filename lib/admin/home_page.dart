@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:languo/admin/pengajuanSakitPage.dart';
+import 'package:languo/screen/buat_qr.dart';
 import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/admin/PengajuanCutiPage.dart';
 import 'package:languo/admin/PengajuanIzinPage.dart';
@@ -175,7 +176,7 @@ class _HomeAdminState extends State<HomeAdmin> {
             onTap: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TambahJadwalPage()),
+                MaterialPageRoute(builder: (context) => BuatQRPage()),
               );
             },
             child: Container(
@@ -276,15 +277,30 @@ class _HomeAdminState extends State<HomeAdmin> {
                   ],
                 ),
               ),
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white.withOpacity(0.3),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProfilePage()),
+                  );
+                },
                 child: CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.grey[300],
-                  child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+                  radius: 28,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage:
+                        (user?.userPhoto != null && user!.userPhoto!.isNotEmpty)
+                            ? NetworkImage(user.userPhoto!)
+                            : null,
+                    child: (user?.userPhoto == null || user!.userPhoto!.isEmpty)
+                        ? Icon(Icons.person, color: Colors.grey[600], size: 32)
+                        : null,
+                  ),
                 ),
-              ),
+              )
             ],
           ),
         );

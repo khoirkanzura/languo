@@ -5,7 +5,13 @@ import '../../models/user_model.dart';
 import '../../screen/edit_profile.dart';
 import '../../routes/routes_manager.dart';
 import '../../screen/qr_scanner_screen.dart';
-import '../murid/home_page.dart';
+import '../users/karyawan/home_page.dart';
+import '../users/dosen/home_page.dart';
+import '../admin/home_page.dart';
+import 'notifikasi_page.dart';
+import 'pengaturan_page.dart';
+import 'faq_page.dart';
+import 'logout_dialog.dart'; // PASTIKAN INI ADA!
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -191,21 +197,51 @@ class ProfilePage extends StatelessWidget {
                       },
                     ),
                     _menuItem(
-                        Icons.notifications_outlined, "Notifikasi", () {}),
-                    _menuItem(Icons.settings_outlined, "Pengaturan", () {}),
-                    _menuItem(Icons.help_outline, "FAQ", () {}),
+                      Icons.notifications_outlined,
+                      "Notifikasi",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotifikasiPage()),
+                        );
+                      },
+                    ),
+
+                    _menuItem(
+                      Icons.settings_outlined,
+                      "Pengaturan",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PengaturanPage()),
+                        );
+                      },
+                    ),
+
+                    _menuItem(
+                      Icons.help_outline,
+                      "FAQ",
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const FaqPage()),
+                        );
+                      },
+                    ),
+
                     const SizedBox(height: 30),
-                    // Log Out Button
+                    
+                    // ========================================
+                    // TOMBOL LOG OUT - GUNAKAN LogoutDialog.show()
+                    // ========================================
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: ElevatedButton(
-                        onPressed: () async {
-                          await FirebaseAuth.instance.signOut();
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => const AuthPage()),
-                            (route) => false,
-                          );
+                        onPressed: () {
+                          // PENTING: Panggil LogoutDialog.show() untuk menampilkan pop-up
+                          LogoutDialog.show(context);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF6B4A),
@@ -283,6 +319,19 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
+  Widget getHomeByRole(String role) {
+    switch (role) {
+      case "Karyawan":
+        return const HomeKaryawan();
+      case "Admin":
+        return const HomeAdmin();
+      case "Dosen":
+        return const HomeDosen();
+      default:
+        return const HomeKaryawan();
+    }
+  }
+
   Widget _buildBottomNav(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
@@ -304,10 +353,19 @@ class ProfilePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               GestureDetector(
-                onTap: () {
+                onTap: () async {
+                  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+                  // ambil data user dari Firestore
+                  final userDoc = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .get();
+
+                  final userRole = userDoc['user_role'];
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeMurid()),
+                    MaterialPageRoute(builder: (_) => getHomeByRole(userRole)),
                   );
                 },
                 child: Column(

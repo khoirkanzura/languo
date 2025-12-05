@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
 
 class KehadiranPage extends StatefulWidget {
   const KehadiranPage({super.key});
@@ -9,47 +12,138 @@ class KehadiranPage extends StatefulWidget {
 }
 
 class _KehadiranPageState extends State<KehadiranPage> {
-  // State untuk menyimpan data kehadiran
-  List<Map<String, dynamic>> kehadiranList = [
-    {
-      'kelas': 'Kelas Mandarin',
-      'masuk': '08:11',
-      'keluar': '-- : --',
-      'tanggal': 'Jum, 30 Okt 2025',
-      'status': 'Proses',
-    },
-    {
-      'kelas': 'Kelas Mandarin',
-      'masuk': '08:00',
-      'keluar': '18:00',
-      'tanggal': 'Jum, 30 Okt 2025',
-      'status': 'Tepat Waktu',
-    },
-    {
-      'kelas': 'Kelas Mandarin',
-      'masuk': '08:15',
-      'keluar': '18:05',
-      'tanggal': 'Jum, 30 Okt 2025',
-      'status': 'Terlambat',
-    },
-    {
-      'kelas': 'Kelas Mandarin',
-      'masuk': '-- : --',
-      'keluar': '-- : --',
-      'tanggal': 'Jum, 30 Okt 2025',
-      'status': 'Belum',
-    },
-  ];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  String _formatDisplayDate(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate);
+      final dayShort = DateFormat.E('id').format(dt);
+      final dayNum = DateFormat('dd').format(dt);
+      final monthShort = DateFormat.MMM('id').format(dt);
+      final year = DateFormat('yyyy').format(dt);
+      return "$dayShort, $dayNum $monthShort $year";
+    } catch (_) {
+      return isoDate;
+    }
+  }
+
+  Color _getJamColor(String jam) {
+    if (jam.isEmpty) return Colors.grey;
+    if (jam.contains("--")) return Colors.grey;
+    try {
+      final parts = jam.split(":");
+      final h = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      if (h < 8 || (h == 8 && m <= 10)) {
+        return const Color(0xFF4CAF50);
+      }
+      return const Color(0xFFF44336);
+    } catch (_) {
+      return Colors.black;
+    }
+  }
+
+  Color _getKeluarColor(String jam) {
+    if (jam.isEmpty || jam.contains("--")) return Colors.grey;
+    return const Color(0xFF4CAF50);
+  }
+
+  Color _getStatusBgColor(String status) {
+    switch (status) {
+      case 'Proses':
+        return const Color(0xFFFF9800);
+      case 'Tepat Waktu':
+        return const Color(0xFF4CAF50);
+      case 'Terlambat':
+        return const Color(0xFFF44336);
+      case 'Belum':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _computeStatusFromCheckIn(String checkIn, String checkOut) {
+    if (checkIn.isEmpty) return 'Belum';
+    if (checkOut.isEmpty) return 'Proses';
+    try {
+      final parts = checkIn.split(':');
+      final h = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      if (h > 8 || (h == 8 && m > 10)) return 'Terlambat';
+      return 'Tepat Waktu';
+    } catch (_) {
+      return 'Tepat Waktu';
+    }
+  }
+
+  Future<void> _performCheckOut(
+      String docId, Map<String, dynamic> docData) async {
+    final now = DateTime.now();
+    final timeNow =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
+    final checkIn = (docData['check_in'] ?? '').toString();
+    String newStatus = _computeStatusFromCheckIn(checkIn, timeNow);
+
+    // 🔥 PATH FIRESTORE YANG BENAR
+    await _firestore
+        .collection('absensi')
+        .doc(currentUserId)
+        .collection('absensi')
+        .doc(docId)
+        .update({
+      'check_out': timeNow,
+      'status': newStatus,
+      'updated_at': FieldValue.serverTimestamp(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Check out berhasil!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2)),
+    );
+  }
+
+  void _showCheckOutDialog(String docId, Map<String, dynamic> docData) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return _CountdownDialog(
+          onCheckOut: () async {
+            Navigator.pop(context);
+            await _performCheckOut(docId, docData);
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (currentUserId.isEmpty) {
+      return Scaffold(
+        body: Center(child: Text('User belum login')),
+      );
+    }
+
+    final stream = _firestore
+        .collection('absensi')
+        .doc(currentUserId)
+        .collection('absensi')
+        .orderBy('date', descending: true)
+        .snapshots();
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
@@ -89,16 +183,51 @@ class _KehadiranPageState extends State<KehadiranPage> {
 
             const SizedBox(height: 16),
 
-            // List Data
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: kehadiranList.length,
-                itemBuilder: (context, index) {
-                  return _buildCard(
-                    context: context,
-                    index: index,
-                    data: kehadiranList[index],
+              child: StreamBuilder<QuerySnapshot>(
+                stream: stream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final docs = snapshot.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return const Center(
+                        child: Text('Belum ada data kehadiran'));
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      final d = docs[index];
+                      final data = d.data() as Map<String, dynamic>;
+
+                      final checkIn = (data['check_in'] ?? '').toString();
+                      final checkOut = (data['check_out'] ?? '').toString();
+                      final date = (data['date'] ?? '').toString();
+                      final kelas = (data['kelas'] ?? 'Kelas').toString();
+                      final status = (data['status'] ??
+                              _computeStatusFromCheckIn(checkIn, checkOut))
+                          .toString();
+
+                      final displayDate =
+                          date.isNotEmpty ? _formatDisplayDate(date) : date;
+
+                      return _buildCard(
+                        docId: d.id,
+                        kelas: kelas,
+                        masuk: checkIn.isEmpty ? '-- : --' : checkIn,
+                        keluar: checkOut.isEmpty ? '-- : --' : checkOut,
+                        tanggal: displayDate,
+                        status: status,
+                        rawData: data,
+                      );
+                    },
                   );
                 },
               ),
@@ -109,111 +238,17 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  // Menampilkan dialog saat button Check Out diklik
-  void _showCheckOutDialog(int index) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return _CountdownDialog(
-          onCheckOut: () {
-            Navigator.pop(context);
-            _handleCheckOut(index);
-          },
-        );
-      },
-    );
-  }
-
-  // Mengupdate data setelah checkout berhasil
-  void _handleCheckOut(int index) {
-    // Hitung status berdasarkan waktu masuk
-    String masuk = kehadiranList[index]['masuk'];
-    String newStatus = 'Tepat Waktu';
-
-    if (!masuk.contains('--')) {
-      try {
-        final parts = masuk.split(":");
-        final h = int.parse(parts[0]);
-        final m = int.parse(parts[1]);
-
-        // Jika masuk setelah 08:10, maka terlambat
-        if (h > 8 || (h == 8 && m > 10)) {
-          newStatus = 'Terlambat';
-        }
-      } catch (_) {
-        newStatus = 'Tepat Waktu';
-      }
-    }
-
-    setState(() {
-      // Update waktu keluar dengan waktu saat ini (simulasi)
-      kehadiranList[index]['keluar'] = '18:08';
-      kehadiranList[index]['status'] = newStatus;
-    });
-
-    // Tampilkan snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Check out berhasil!'),
-        duration: Duration(seconds: 2),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Color _getJamColor(String jam) {
-    if (jam.contains("--")) return Colors.grey;
-
-    try {
-      final parts = jam.split(":");
-      final h = int.parse(parts[0]);
-      final m = int.parse(parts[1]);
-
-      if (h < 8 || (h == 8 && m <= 10)) {
-        return const Color(0xFF4CAF50);
-      }
-
-      return const Color(0xFFF44336);
-    } catch (_) {
-      return Colors.black;
-    }
-  }
-
-  // Warna khusus untuk waktu keluar (selalu hijau jika sudah terisi)
-  Color _getKeluarColor(String jam) {
-    if (jam.contains("--")) return Colors.grey;
-    return const Color(0xFF4CAF50);
-  }
-
-  Color _getStatusBgColor(String status) {
-    switch (status) {
-      case 'Proses':
-        return const Color(0xFFFF9800);
-      case 'Tepat Waktu':
-        return const Color(0xFF4CAF50);
-      case 'Terlambat':
-        return const Color(0xFFF44336);
-      case 'Belum':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
   Widget _buildCard({
-    required BuildContext context,
-    required int index,
-    required Map<String, dynamic> data,
+    required String docId,
+    required String kelas,
+    required String masuk,
+    required String keluar,
+    required String tanggal,
+    required String status,
+    required Map<String, dynamic> rawData,
   }) {
-    String kelas = data['kelas'];
-    String masuk = data['masuk'];
-    String keluar = data['keluar'];
-    String tanggal = data['tanggal'];
-    String status = data['status'];
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12, top: 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -229,7 +264,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Kelas dan Tanggal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -251,14 +285,10 @@ class _KehadiranPageState extends State<KehadiranPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // Row 2: Icon + Jam, Status, Button
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Location
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -272,8 +302,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Jam Masuk & Keluar
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,14 +350,10 @@ class _KehadiranPageState extends State<KehadiranPage> {
                   ],
                 ),
               ),
-
               const SizedBox(width: 12),
-
-              // Status dan Button
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Status Badge
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -347,11 +371,9 @@ class _KehadiranPageState extends State<KehadiranPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Check Out Button
                   ElevatedButton(
                     onPressed: status == 'Proses'
-                        ? () => _showCheckOutDialog(index)
+                        ? () => _showCheckOutDialog(docId, rawData)
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: status == 'Proses'
@@ -361,9 +383,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
                       disabledBackgroundColor: Colors.grey[400],
                       disabledForegroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
+                          horizontal: 20, vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -387,7 +407,6 @@ class _KehadiranPageState extends State<KehadiranPage> {
   }
 }
 
-// Widget Dialog dengan Countdown Timer
 class _CountdownDialog extends StatefulWidget {
   final VoidCallback onCheckOut;
 
@@ -398,7 +417,7 @@ class _CountdownDialog extends StatefulWidget {
 }
 
 class _CountdownDialogState extends State<_CountdownDialog> {
-  int _remainingSeconds = 60; // 1 menit = 60 detik
+  int _remainingSeconds = 60;
   Timer? _timer;
 
   @override
@@ -407,7 +426,6 @@ class _CountdownDialogState extends State<_CountdownDialog> {
     _startCountdown();
   }
 
-  // Countdown timer berjalan otomatis
   void _startCountdown() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
@@ -416,7 +434,6 @@ class _CountdownDialogState extends State<_CountdownDialog> {
         });
       } else {
         _timer?.cancel();
-        // Auto checkout ketika countdown selesai
         widget.onCheckOut();
       }
     });
@@ -438,73 +455,47 @@ class _CountdownDialogState extends State<_CountdownDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
+            borderRadius: BorderRadius.circular(16), color: Colors.white),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Title
             const Text(
               'Waktu check out anda',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-
-            // Time Range Badge (Orange)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF9800),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                '18.00 - 18.10',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+                  color: const Color(0xFFFF9800),
+                  borderRadius: BorderRadius.circular(20)),
+              child: const Text('18.00 - 18.10',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
             ),
             const SizedBox(height: 12),
-
-            // Countdown Timer Badge (Green)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _formatTime(_remainingSeconds),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(20)),
+              child: Text(_formatTime(_remainingSeconds),
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
             ),
             const SizedBox(height: 20),
-
-            // Check Out Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -517,17 +508,12 @@ class _CountdownDialogState extends State<_CountdownDialog> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
+                      borderRadius: BorderRadius.circular(25)),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Check out',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: const Text('Check out',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               ),
             ),
           ],

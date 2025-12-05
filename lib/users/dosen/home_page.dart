@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:languo/users/karyawan/home_page.dart';
+import '../../models/user_model.dart';
+import '../../profile/profile_page.dart';
 import '../../screen/qr_scanner_screen.dart';
 import '../../screen/employee_detail_screen.dart';
-import '../../models/user_model.dart';
-import 'profile_page.dart';
 import 'package:languo/users/rekapan/kehadiran_page.dart';
-import 'package:languo/users/pengajuan/sakit_page.dart';
+import 'package:languo/users/pengajuan/cuti_page.dart';
 import 'package:languo/users/pengajuan/izin_page.dart';
+import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/rekapan/izin_page.dart';
-import '../karyawan/home_page.dart';
+import 'home_page.dart';
 import '../../admin/home_page.dart';
 
-class HomeMurid extends StatefulWidget {
-  const HomeMurid({super.key});
+class HomeDosen extends StatefulWidget {
+  const HomeDosen({super.key});
 
   @override
-  State<HomeMurid> createState() => _HomeMuridState();
+  State<HomeDosen> createState() => _HomeDosenState();
 }
 
-class _HomeMuridState extends State<HomeMurid> {
+class _HomeDosenState extends State<HomeDosen> {
   String? _lastScannedData;
 
   Future<void> checkUserRole() async {
@@ -37,7 +39,7 @@ class _HomeMuridState extends State<HomeMurid> {
 
     if (!mounted) return;
 
-    if (role != "Murid") {
+    if (role != "Dosen") {
       if (role == "Karyawan") {
         Navigator.pushReplacement(
           context,
@@ -352,8 +354,13 @@ class _HomeMuridState extends State<HomeMurid> {
                   child: CircleAvatar(
                     radius: 26,
                     backgroundColor: Colors.grey[300],
-                    child:
-                        Icon(Icons.person, color: Colors.grey[600], size: 32),
+                    backgroundImage:
+                        (user.userPhoto != null && user.userPhoto!.isNotEmpty)
+                            ? NetworkImage(user.userPhoto!)
+                            : null,
+                    child: (user.userPhoto == null || user.userPhoto!.isEmpty)
+                        ? Icon(Icons.person, color: Colors.grey[600], size: 32)
+                        : null,
                   ),
                 ),
               ),
@@ -416,6 +423,14 @@ class _HomeMuridState extends State<HomeMurid> {
             ],
           ),
         ),
+
+        // CUTI
+        _menuButton(Icons.schedule, "Cuti", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PengajuanCutiPage()),
+          );
+        }),
       ],
     );
   }
