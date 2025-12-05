@@ -277,15 +277,30 @@ class _HomeAdminState extends State<HomeAdmin> {
                   ],
                 ),
               ),
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white.withOpacity(0.3),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProfilePage()),
+                  );
+                },
                 child: CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.grey[300],
-                  child: Icon(Icons.person, color: Colors.grey[600], size: 32),
+                  radius: 28,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage:
+                        (user?.userPhoto != null && user!.userPhoto!.isNotEmpty)
+                            ? NetworkImage(user.userPhoto!)
+                            : null,
+                    child: (user?.userPhoto == null || user!.userPhoto!.isEmpty)
+                        ? Icon(Icons.person, color: Colors.grey[600], size: 32)
+                        : null,
+                  ),
                 ),
-              ),
+              )
             ],
           ),
         );

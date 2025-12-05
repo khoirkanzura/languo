@@ -5,8 +5,8 @@ class UserModel {
   final String userName;
   final String userEmail;
   final String userRole;
-  final String? userPhoto;
-  final String? userPass;
+  String? userPhoto;
+  String? userPass;
   final num sisaCuti;
 
   final DateTime createdAt;
