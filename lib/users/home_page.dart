@@ -11,7 +11,7 @@ import 'package:languo/users/pengajuan/izin_pengajuan_page.dart';
 import 'package:languo/users/pengajuan/sakit_pengajuan_page.dart';
 import 'package:languo/users/rekapan/izin_rekapan_user_page.dart';
 import 'package:languo/users/rekapan/sakit_rekapan_user_page.dart';
-import 'package:languo/users/rekapan/cuti_page.dart ';
+import 'package:languo/users/rekapan/cuti_rekapan_user_page.dart';
 import '../admin/home_page.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
