@@ -11,6 +11,7 @@ import '../admin/home_page.dart';
 import 'notifikasi_page.dart';
 import 'pengaturan_page.dart';
 import 'faq_page.dart';
+import 'logout_dialog.dart'; // PASTIKAN INI ADA!
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -231,17 +232,16 @@ class ProfilePage extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 30),
-                    // Log Out Button
+                    
+                    // ========================================
+                    // TOMBOL LOG OUT - GUNAKAN LogoutDialog.show()
+                    // ========================================
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: ElevatedButton(
-                        onPressed: () async {
-                          await FirebaseAuth.instance.signOut();
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => const AuthPage()),
-                            (route) => false,
-                          );
+                        onPressed: () {
+                          // PENTING: Panggil LogoutDialog.show() untuk menampilkan pop-up
+                          LogoutDialog.show(context);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF6B4A),
