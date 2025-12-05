@@ -1,44 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/izin_page.dart';
+import 'package:languo/admin/rekapan/sakit_rekapan_page.dart';
 
-class IzinPage extends StatefulWidget {
-  final String role; // menerima role dari halaman sebelumnya
+class SakitPage extends StatefulWidget {
+  final String role;
 
-  const IzinPage({super.key, required this.role});
+  const SakitPage({super.key, required this.role});
 
   @override
-  State<IzinPage> createState() => _IzinPageState();
+  State<SakitPage> createState() => _SakitPageState();
 }
 
-class _IzinPageState extends State<IzinPage> {
+class _SakitPageState extends State<SakitPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  List<Map<String, String>> dataIzin = [
+  List<Map<String, String>> dataSakit = [
     {
-      "nama": "ANDI SAPUTRA",
+      "nama": "Han Jisung",
       "tanggal": "11 November 2025",
-      "email": "andi@gmail.com",
-      "alasan": "Izin karena keperluan keluarga",
-      "jenis": "Izin Tidak Masuk",
-      "file": "surat_izin1.pdf",
-      "sisa": "4 hari"
-    },
-    {
-      "nama": "BUDI HARTONO",
-      "tanggal": "12 November 2025",
-      "email": "budi@gmail.com",
-      "alasan": "Izin pergi ke rumah sakit",
-      "jenis": "Izin Sakit",
-      "file": "surat_izin2.pdf",
-      "sisa": "2 hari"
+      "email": "Hanji@gmail.com",
+      "keterangan": "Demam tinggi dan flu",
+      "file": "surat_sakit.pdf",
     },
   ];
 
   String keyword = "";
 
-  // ====================== POPUP TERIMA ======================
+  // ============================================================
+  // POPUP TERIMA
+  // ============================================================
   void showSuccessPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -89,7 +80,9 @@ class _IzinPageState extends State<IzinPage> {
     );
   }
 
-  // ====================== POPUP KONFIRM TOLAK ======================
+  // ============================================================
+  // POPUP KONFIRMASI TOLAK
+  // ============================================================
   void showRejectConfirm(BuildContext context) {
     showDialog(
       context: context,
@@ -160,7 +153,9 @@ class _IzinPageState extends State<IzinPage> {
     );
   }
 
-  // ====================== POPUP TOLAK SUKSES ======================
+  // ============================================================
+  // POPUP TOLAK SUKSES
+  // ============================================================
   void showRejectSuccess(BuildContext context) {
     showDialog(
       context: context,
@@ -211,7 +206,9 @@ class _IzinPageState extends State<IzinPage> {
     );
   }
 
-  // ====================== UI ======================
+  // ============================================================
+  // UI
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,13 +218,13 @@ class _IzinPageState extends State<IzinPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: IzinList()),
+          Expanded(child: SakitList()),
         ],
       ),
     );
   }
 
-  // HEADER (DINAMIC ROLE)
+  // HEADER
   Widget header() {
     return Container(
       height: 160,
@@ -244,19 +241,15 @@ class _IzinPageState extends State<IzinPage> {
         child: Align(
           alignment: Alignment.centerLeft,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 26,
-                ),
+                onTap: () => Navigator.pop(context),
+                child:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 10),
               Text(
-                "Izin  <  ${widget.role}",
+                "Sakit  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -270,7 +263,7 @@ class _IzinPageState extends State<IzinPage> {
     );
   }
 
-  // TAB BAR
+  // TAB BAR + LOGIKA PINDAH HALAMAN
   Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
@@ -330,7 +323,7 @@ class _IzinPageState extends State<IzinPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RekapanAdminIzinPage(role: role),
+                builder: (_) => RekapanAdminSakitPage(role: role),
               ),
             );
             return;
@@ -386,9 +379,9 @@ class _IzinPageState extends State<IzinPage> {
     );
   }
 
-  // LIST IZIN
-  Widget IzinList() {
-    var filtered = dataIzin
+  // LIST IZIN SAKIT
+  Widget SakitList() {
+    var filtered = dataSakit
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
 
@@ -396,12 +389,12 @@ class _IzinPageState extends State<IzinPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return izinCard(filtered[index], index);
+        return SakitCard(filtered[index], index);
       },
     );
   }
 
-  Widget izinCard(Map<String, String> item, int index) {
+  Widget SakitCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
     return AnimatedContainer(
@@ -432,6 +425,7 @@ class _IzinPageState extends State<IzinPage> {
                     Text(
                       "${item["tanggal"]} s.d ${item["tanggal"]}",
                       style: const TextStyle(
+                          fontSize: 10,
                           color: Color(0xFFDA3B26),
                           fontWeight: FontWeight.bold),
                     ),
@@ -479,9 +473,8 @@ class _IzinPageState extends State<IzinPage> {
           if (isExpanded) ...[
             const SizedBox(height: 15),
             detailRow("Alamat Email :", item["email"]!),
-            detailRow("Alasan :", item["alasan"]!),
-            detailRow("Sisa cuti :", item["sisa"]!),
             detailRow("Tanggal :", item["tanggal"]!),
+            detailRow("Keterangan :", item["keterangan"]!),
             const SizedBox(height: 15),
             GestureDetector(
               onTap: () {},
@@ -531,7 +524,8 @@ class _IzinPageState extends State<IzinPage> {
           Text(label,
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value, style: const TextStyle(fontSize: 13)),
+          Text(value,
+              style: const TextStyle(fontSize: 13, color: Colors.black54)),
         ],
       ),
     );

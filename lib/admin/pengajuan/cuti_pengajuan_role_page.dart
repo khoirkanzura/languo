@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/cuti_page.dart';
+import 'package:languo/admin/verifikasi/cuti_verifikasi_page.dart';
 
 class PengajuanCutiPage extends StatefulWidget {
   const PengajuanCutiPage({super.key});

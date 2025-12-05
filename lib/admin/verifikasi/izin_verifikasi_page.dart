@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/cuti_page.dart';
+import 'package:languo/admin/rekapan/izin_rekapan_page.dart';
 
-class CutiPage extends StatefulWidget {
+class IzinPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya
 
-  const CutiPage({super.key, required this.role});
+  const IzinPage({super.key, required this.role});
 
   @override
-  State<CutiPage> createState() => _CutiPageState();
+  State<IzinPage> createState() => _IzinPageState();
 }
 
-class _CutiPageState extends State<CutiPage> {
+class _IzinPageState extends State<IzinPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
   List<Map<String, String>> dataIzin = [
     {
-      "nama": "GERLY VAEYUNGFAN",
+      "nama": "ANDI SAPUTRA",
       "tanggal": "11 November 2025",
-      "email": "gerlyvaeyungfan@gmail.com",
-      "alasan": "Mengambil Cuti Tahunan",
-      "file": "surat_izin2.pdf",
-      "sisa": "3 hari",
+      "email": "andi@gmail.com",
+      "alasan": "Izin karena keperluan keluarga",
+      "jenis": "Izin Tidak Masuk",
+      "file": "surat_izin1.pdf",
+      "sisa": "4 hari"
     },
     {
       "nama": "BUDI HARTONO",
@@ -220,7 +221,7 @@ class _CutiPageState extends State<CutiPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: CutiList()),
+          Expanded(child: IzinList()),
         ],
       ),
     );
@@ -255,7 +256,7 @@ class _CutiPageState extends State<CutiPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Cuti  <  ${widget.role}",
+                "Izin  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -329,7 +330,7 @@ class _CutiPageState extends State<CutiPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RekapanAdminCutiPage(role: role),
+                builder: (_) => RekapanAdminIzinPage(role: role),
               ),
             );
             return;
@@ -386,7 +387,7 @@ class _CutiPageState extends State<CutiPage> {
   }
 
   // LIST IZIN
-  Widget CutiList() {
+  Widget IzinList() {
     var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();

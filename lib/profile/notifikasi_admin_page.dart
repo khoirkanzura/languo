@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'profile_page.dart';
-import 'verifikasi/cuti_page.dart';
-import 'verifikasi/izin_page.dart';
-import 'verifikasi/sakit_page.dart';
+import '../admin/verifikasi/cuti_verifikasi_page.dart';
+import '../admin/verifikasi/izin_page.dart';
+import '../admin/verifikasi/sakit_verifikasi_page.dart';
 
 class NotifikasiAdminPage extends StatefulWidget {
   const NotifikasiAdminPage({super.key});
