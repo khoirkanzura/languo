@@ -150,7 +150,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Sakit <  ${widget.role}",
+                "Sakit  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -292,7 +292,8 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
   Widget SakitCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Disetujui" ? Colors.green : Colors.red;
+    Color badgeColor =
+        item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),

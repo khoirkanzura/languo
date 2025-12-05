@@ -144,7 +144,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Cuti <  ${widget.role}",
+                "Cuti  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
