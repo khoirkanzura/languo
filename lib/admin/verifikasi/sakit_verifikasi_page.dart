@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/sakit_rekapan_page.dart';
+import 'package:languo/admin/rekapan/sakit_rekapan_admin_page.dart';
 
 class SakitPage extends StatefulWidget {
   final String role;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/izin_service.dart';
-import '../rekapan/izin_page.dart';
+import '../rekapan/izin_rekapan_page.dart';
 
 class PengajuanIzinPage extends StatefulWidget {
   const PengajuanIzinPage({super.key});

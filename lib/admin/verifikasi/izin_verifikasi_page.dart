@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/izin_rekapan_page.dart';
+import 'package:languo/admin/rekapan/izin_rekapan_admin_page.dart';
 
 class IzinPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya

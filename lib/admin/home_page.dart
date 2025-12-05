@@ -7,12 +7,12 @@ import 'package:languo/admin/pengajuan/cuti_pengajuan_role_page.dart';
 import 'package:languo/admin/PengajuanIzinPage.dart';
 import '../models/user_model.dart';
 import '../profile/profile_page.dart';
-import 'rekapan/cuti_rekapan_page.dart';
-import 'rekapan/izin_rekapan_page.dart';
-import 'rekapan/sakit_rekapan_page.dart';
+import 'rekapan/cuti_rekapan_admin_page.dart';
+import 'rekapan/izin_rekapan_admin_page.dart';
+import 'rekapan/sakit_rekapan_admin_page.dart';
 import 'verifikasi/sakit_verifikasi_page.dart';
 import 'tambah_jadwal.dart';
-import 'rekapan/kehadiran_rekapan_page.dart';
+import 'rekapan/kehadiran_rekapan_admin_page.dart';
 
 class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});

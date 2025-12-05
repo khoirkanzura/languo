@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:languo/users/rekapan/cuti_page.dart';
-import 'package:languo/users/rekapan/izin_page.dart';
-import 'package:languo/users/rekapan/sakit_page.dart';
+import 'package:languo/users/rekapan/cuti_rekapan_page.dart';
+import 'package:languo/users/rekapan/izin_rekapan_page.dart';
+import 'package:languo/users/rekapan/sakit_rekapan_page.dart';
 
 class NotifikasiPage extends StatefulWidget {
   const NotifikasiPage({super.key});

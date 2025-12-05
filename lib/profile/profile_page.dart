@@ -6,8 +6,8 @@ import '../../screen/edit_profile.dart';
 import '../../screen/qr_scanner_screen.dart';
 import '../users/home_page.dart';
 import '../admin/home_page.dart';
-import 'notifikasi_page.dart';
-import 'faq_page.dart';
+import 'notifikasi_user_page.dart';
+import 'faq_user_page.dart';
 import 'faq_admin_page.dart';
 import 'logout_dialog.dart'; // PASTIKAN INI ADA!
 

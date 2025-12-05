@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:languo/users/rekapan/sakit_page.dart';
+import 'package:languo/users/rekapan/sakit_rekapan_page.dart';
 import '../../../services/sakit_service.dart';
 
 class PengajuanSakitPage extends StatefulWidget {
