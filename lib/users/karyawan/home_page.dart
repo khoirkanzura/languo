@@ -12,6 +12,8 @@ import 'package:languo/users/pengajuan/sakit_page.dart';
 import 'package:languo/users/rekapan/izin_page.dart';
 import '../dosen/home_page.dart';
 import '../../admin/home_page.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class HomeKaryawan extends StatefulWidget {
   const HomeKaryawan({super.key});
@@ -22,6 +24,25 @@ class HomeKaryawan extends StatefulWidget {
 
 class _HomeKaryawanState extends State<HomeKaryawan> {
   String? _lastScannedData;
+
+  bool _localeReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // FIX AREA ————————
+    initializeDateFormatting('id_ID', null).then((_) {
+      if (mounted) {
+        setState(() {
+          _localeReady = true;
+        });
+      }
+    });
+    // ————————————————
+
+    checkUserRole();
+  }
 
   Future<void> checkUserRole() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -34,7 +55,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
 
     if (!doc.exists) return;
 
-    final role = doc.data()?['user_role']; // Ambil role
+    final role = doc.data()?['user_role'];
 
     if (!mounted) return;
 
@@ -375,23 +396,18 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // HADIR
         _menuButton(Icons.person, "Hadir", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const KehadiranPage()),
           );
         }),
-
-        // ========== IZIN (FIXED) ==========
         _menuButton(Icons.description, "Izin", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
           );
         }),
-
-        // SAKIT
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -422,8 +438,6 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
             ],
           ),
         ),
-
-        // CUTI
         _menuButton(Icons.schedule, "Cuti", () {
           Navigator.push(
             context,
@@ -466,6 +480,16 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
 
   // ===================== Schedule Card =====================
   Widget _buildScheduleCard() {
+    if (!_localeReady) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEE, d MMM yyyy', 'id_ID').format(now);
+
     return Transform.translate(
       offset: const Offset(0, -30),
       child: Padding(
@@ -488,16 +512,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
               Row(
                 children: [
                   Text(
-                    "Kelas Mandarin",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Spacer(),
-                  Text(
-                    "Sen, 1 Nov 2025",
+                    formattedDate,
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,
@@ -507,7 +522,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
               ),
               const SizedBox(height: 16),
               Text(
-                "08:00 - 18:00",
+                "07:00 - 17:00",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 28,
@@ -520,8 +535,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const EmployeeDetailScreen(),
-                    ),
+                        builder: (_) => const EmployeeDetailScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -534,7 +548,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                   elevation: 0,
                 ),
                 child: Text(
-                  "Detail",
+                  "Cek Lokasi Anda",
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,

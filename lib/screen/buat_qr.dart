@@ -40,8 +40,8 @@ class _BuatQRPageState extends State<BuatQRPage> {
   bool _isWithinTimeRange() {
     final now = DateTime.now();
 
-    final start = DateTime(now.year, now.month, now.day, 7, 0);
-    final end = DateTime(now.year, now.month, now.day, 17, 0);
+    final start = DateTime(now.year, now.month, now.day, 23, 0);
+    final end = DateTime(now.year, now.month, now.day, 23, 30);
 
     return now.isAfter(start) && now.isBefore(end);
   }
@@ -51,11 +51,11 @@ class _BuatQRPageState extends State<BuatQRPage> {
     final now = DateTime.now();
 
     // Check-in: sebelum 08.00
-    final checkInEnd = DateTime(now.year, now.month, now.day, 8, 0);
+    final checkInEnd = DateTime(now.year, now.month, now.day, 23, 05);
 
     // Check-out: 09.00 - 17.00
-    final checkOutStart = DateTime(now.year, now.month, now.day, 9, 0);
-    final checkOutEnd = DateTime(now.year, now.month, now.day, 17, 0);
+    final checkOutStart = DateTime(now.year, now.month, now.day, 23, 06);
+    final checkOutEnd = DateTime(now.year, now.month, now.day, 23, 30);
 
     if (now.isBefore(checkInEnd)) {
       return "check_in"; // 07.00 - 08.00
