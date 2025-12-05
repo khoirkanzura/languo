@@ -8,10 +8,10 @@ class KehadiranPage extends StatefulWidget {
 }
 
 class _KehadiranPageState extends State<KehadiranPage> {
-  String selectedTab = 'Murid';
+  String selectedTab = 'Dosen';
   int selectedTabIndex = 0;
   TextEditingController searchController = TextEditingController();
-  List<KehadiranData> muridList = [];
+  List<KehadiranData> dosenList = [];
   List<KehadiranData> karyawanList = [];
   List<KehadiranData> filteredList = [];
 
@@ -22,8 +22,8 @@ class _KehadiranPageState extends State<KehadiranPage> {
   }
 
   void loadKehadiranData() {
-    // Data Murid
-    muridList = [
+    // Data Dosen
+    dosenList = [
       KehadiranData(
         nama: 'Kartika Tri Juliana',
         email: 'Kartika@gmail.com',
@@ -90,7 +90,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
 
   void updateFilteredList() {
     setState(() {
-      List<KehadiranData> currentList = selectedTab == 'Murid' ? muridList : karyawanList;
+      List<KehadiranData> currentList = selectedTab == 'Dosen' ? dosenList : karyawanList;
       
       if (searchController.text.isEmpty) {
         filteredList = currentList;
@@ -131,8 +131,8 @@ class _KehadiranPageState extends State<KehadiranPage> {
                   KehadiranData itemToRemove = filteredList[index];
                   filteredList.removeAt(index);
                   
-                  if (selectedTab == 'Murid') {
-                    muridList.removeWhere((data) => data == itemToRemove);
+                  if (selectedTab == 'Dosen') {
+                    dosenList.removeWhere((data) => data == itemToRemove);
                   } else {
                     karyawanList.removeWhere((data) => data == itemToRemove);
                   }
@@ -246,7 +246,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 ),
                 Row(
                   children: [
-                    tabButton("Murid", 0),
+                    tabButton("Dosen", 0),
                     tabButton("Karyawan", 1),
                   ],
                 ),
