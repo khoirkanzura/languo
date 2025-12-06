@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
+import 'package:languo/screen/maps.dart';
 
 class KehadiranPage extends StatefulWidget {
   const KehadiranPage({super.key});
@@ -15,9 +16,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  /// =====================================================
   /// FORMAT TANGGAL
-  /// =====================================================
   String _formatDisplayDate(dynamic firestoreDate) {
     try {
       DateTime dt;
@@ -30,70 +29,26 @@ class _KehadiranPageState extends State<KehadiranPage> {
         return firestoreDate.toString();
       }
 
-      return DateFormat('EEEE, dd MMM yyyy', 'id').format(dt);
+      return DateFormat('EEE, dd MMM yyyy', 'id').format(dt);
     } catch (e) {
       return firestoreDate.toString();
     }
   }
 
-  /// =====================================================
-  /// WARNA JAM MASUK
-  /// =====================================================
+  /// WARNA JAM → SELALU HIJAU
   Color _getJamColor(String jam) {
-    if (jam.isEmpty) return Colors.grey;
-    try {
-      final parts = jam.split(":");
-      final h = int.parse(parts[0]);
-      final m = int.parse(parts[1]);
-      if (h < 8 || (h == 8 && m <= 10)) return Colors.green;
-      return Colors.red;
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
-  Color _getKeluarColor(String jam) {
     if (jam.isEmpty) return Colors.grey;
     return Colors.green;
   }
 
-  Color _getStatusBgColor(String status) {
-    switch (status) {
-      case 'Proses':
-        return Colors.orange;
-      case 'Tepat Waktu':
-        return Colors.green;
-      case 'Terlambat':
-        return Colors.red;
-      case 'Belum':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  /// =====================================================
-  /// STATUS ABSENSI
-  /// =====================================================
-  String _computeStatusFromCheckIn(String checkIn, String checkOut) {
-    if (checkIn.isEmpty) return 'Belum';
+  /// STATUS OTOMATIS
+  String _computeStatus(String checkIn, String checkOut) {
+    if (checkIn.isEmpty) return 'Proses';
     if (checkOut.isEmpty) return 'Proses';
-
-    try {
-      final parts = checkIn.split(':');
-      final h = int.parse(parts[0]);
-      final m = int.parse(parts[1]);
-
-      if (h > 8 || (h == 8 && m > 10)) return 'Terlambat';
-      return 'Tepat Waktu';
-    } catch (_) {
-      return 'Tepat Waktu';
-    }
+    return 'Sudah Absen';
   }
 
-  /// =====================================================
-  /// LOGIKA CHECKOUT
-  /// =====================================================
+  /// IZIN CHECKOUT WAKTU
   bool _isCheckOutTime() {
     final now = DateTime.now();
     final current = now.hour * 60 + now.minute;
@@ -104,17 +59,17 @@ class _KehadiranPageState extends State<KehadiranPage> {
     return current >= start && current <= end;
   }
 
-  Future<void> _performCheckOut(String docId, Map<String, dynamic> data) async {
+  /// ============================================
+  /// LOGIKA CHECK OUT – DIPANGGIL SETELAH VALIDASI MAPS
+  /// ============================================
+  Future<void> _performCheckOut(String docId) async {
     final now = DateTime.now();
     final timeNow =
         "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
-    final checkIn = (data['check_in'] ?? '').toString();
-    final newStatus = _computeStatusFromCheckIn(checkIn, timeNow);
-
     await _firestore.collection('absensi').doc(docId).update({
       'check_out': timeNow,
-      'status': newStatus,
+      'status': 'Sudah Absen',
       'updated_at': FieldValue.serverTimestamp(),
     });
 
@@ -126,22 +81,43 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  void _showCheckOutDialog(String docId, Map<String, dynamic> data) {
+  void _showCheckOutDialog(String docId) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => _CountdownDialog(
         onCheckOut: () async {
           Navigator.pop(context);
-          await _performCheckOut(docId, data);
+          await _performCheckOut(docId);
         },
       ),
     );
   }
 
-  /// =====================================================
-  /// BUILD UTAMA
-  /// =====================================================
+  /// ============================================
+  /// CHECK OUT → KE HALAMAN MAPS → VALIDASI RADIUS
+  /// ============================================
+  Future<void> _goToMapsBeforeCheckout(String docId) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MapsPage()),
+    );
+
+    if (result == true) {
+      // radius valid → lanjut dialog 60 detik
+      _showCheckOutDialog(docId);
+    } else {
+      // radius tidak valid
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda berada di luar radius 100 meter!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// BUILD UI
   @override
   Widget build(BuildContext context) {
     if (currentUserId.isEmpty) {
@@ -187,18 +163,16 @@ class _KehadiranPageState extends State<KehadiranPage> {
 
                       final checkIn = data['check_in'] ?? '';
                       final checkOut = data['check_out'] ?? '';
-                      final status = data['status'] ??
-                          _computeStatusFromCheckIn(checkIn, checkOut);
 
+                      final status = _computeStatus(checkIn, checkOut);
                       final tanggal = _formatDisplayDate(data['date']);
 
                       return _buildCard(
                         docId: d.id,
                         tanggal: tanggal,
-                        masuk: checkIn.toString(),
-                        keluar: checkOut.toString(),
+                        masuk: checkIn,
+                        keluar: checkOut,
                         status: status,
-                        rawData: data,
                       );
                     },
                   );
@@ -211,9 +185,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  /// =====================================================
   /// HEADER
-  /// =====================================================
   Widget _buildHeader() {
     return Container(
       height: 160,
@@ -251,16 +223,13 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  /// =====================================================
   /// CARD ABSENSI
-  /// =====================================================
   Widget _buildCard({
     required String docId,
     required String masuk,
     required String keluar,
     required String tanggal,
     required String status,
-    required Map<String, dynamic> rawData,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -284,22 +253,32 @@ class _KehadiranPageState extends State<KehadiranPage> {
               children: [
                 Text(
                   tanggal,
-                  style: const TextStyle(color: Colors.black54),
+                  style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  "Masuk: $masuk",
-                  style: TextStyle(color: _getJamColor(masuk)),
-                ),
-                Text(
-                  "Keluar: $keluar",
-                  style: TextStyle(color: _getKeluarColor(keluar)),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.red, size: 30),
+                    const SizedBox(width: 6),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Masuk : $masuk",
+                            style: TextStyle(color: _getJamColor(masuk))),
+                        Text("Keluar : ${keluar.isEmpty ? '--:--' : keluar}",
+                            style: TextStyle(color: _getJamColor(keluar))),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
-          /// Kolom Kanan
+          /// BUTTON CHECK OUT
           Column(
             children: [
               Container(
@@ -308,27 +287,22 @@ class _KehadiranPageState extends State<KehadiranPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: _getStatusBgColor(status),
+                  color: status == "Sudah Absen" ? Colors.green : Colors.orange,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  status,
-                  style: const TextStyle(color: Colors.white),
-                ),
+                child:
+                    Text(status, style: const TextStyle(color: Colors.white)),
               ),
-
               const SizedBox(height: 10),
-
-              /// Tombol Check Out (oval & orange)
               SizedBox(
                 width: 120,
                 height: 40,
                 child: ElevatedButton(
                   onPressed: (status == "Proses" && _isCheckOutTime())
-                      ? () => _showCheckOutDialog(docId, rawData)
+                      ? () => _goToMapsBeforeCheckout(docId)
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE95A3A), // Orange
+                    backgroundColor: const Color(0xFFE95A3A),
                     disabledBackgroundColor: Colors.grey.shade300,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -353,9 +327,9 @@ class _KehadiranPageState extends State<KehadiranPage> {
   }
 }
 
-/// =====================================================
+/// ===========================================
 /// DIALOG COUNTDOWN
-/// =====================================================
+/// ===========================================
 class _CountdownDialog extends StatefulWidget {
   final VoidCallback onCheckOut;
   const _CountdownDialog({required this.onCheckOut});

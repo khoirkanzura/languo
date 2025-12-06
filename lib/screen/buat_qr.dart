@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -36,35 +37,45 @@ class _BuatQRPageState extends State<BuatQRPage> {
   }
 
   // ======================================================
-  // BATAS WAKTU ABSENSI (07.00 - 17.00)
+  // CEK WAKTU ABSENSI (07.00 - 17.00)
   bool _isWithinTimeRange() {
     final now = DateTime.now();
 
-    final start = DateTime(now.year, now.month, now.day, 7, 0); // 07.00
-    final end = DateTime(now.year, now.month, now.day, 17, 0); // 17.00
+    final start = DateTime(now.year, now.month, now.day, 7, 0);
+    final end = DateTime(now.year, now.month, now.day, 17, 0);
 
     return now.isAfter(start) && now.isBefore(end);
   }
 
-  // DETEKSI SESI CHECK-IN / CHECK-OUT
-  String _detectSession() {
-    final now = DateTime.now();
+  // ======================================================
+  // CEK STATUS USER: BELUM CHECK IN, SUDAH, DLL
+  Future<String> _getSession() async {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    final checkInEnd = DateTime(now.year, now.month, now.day, 8, 0);
-    final checkOutStart = DateTime(now.year, now.month, now.day, 9, 0);
-    final checkOutEnd = DateTime(now.year, now.month, now.day, 17, 0);
+    final snapshot = await _firestore
+        .collection("absensi")
+        .doc("QR_GLOBAL")
+        .collection(today)
+        .get();
 
-    if (now.isBefore(checkInEnd)) {
-      return "check_in";
-    } else if (now.isAfter(checkOutStart) && now.isBefore(checkOutEnd)) {
-      return "check_out";
-    } else {
-      return "invalid_checkout";
-    }
+    // Tidak pakai user dari sini
+    // sesi berlaku untuk SEMUA user
+    // yang menentukan sesi itu scanner
+
+    return "global"; // QR hanya untuk semua user, sesi ditentukan user saat scan
   }
 
   // ======================================================
-  // GENERATE QR DENGAN JSON
+  // TOKEN UNIK ANTI-CHEAT
+  String _generateToken(int length) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    final rand = Random.secure();
+    return List.generate(length, (index) => chars[rand.nextInt(chars.length)])
+        .join();
+  }
+
+  // ======================================================
+  // GENERATE QR DENGAN EXPIRED TIME (10 DETIK)
   Future<void> _refreshQR() async {
     try {
       final snapshot = await _firestore.collection('users').get();
@@ -79,11 +90,16 @@ class _BuatQRPageState extends State<BuatQRPage> {
         };
       }).toList();
 
-      final session = _detectSession();
+      final now = DateTime.now();
+      final timestamp = now.toIso8601String();
+      final expiresAt = now.add(const Duration(seconds: 10)).toIso8601String();
+
+      final token = _generateToken(12); // token anti pemalsuan
 
       final newQR = jsonEncode({
-        'timestamp': DateTime.now().toIso8601String(),
-        'session': session,
+        'timestamp': timestamp,
+        'expires_at': expiresAt,
+        'token': token,
         'users': users,
       });
 
@@ -137,18 +153,8 @@ class _BuatQRPageState extends State<BuatQRPage> {
   // ======================================================
   @override
   Widget build(BuildContext context) {
-    final session = _detectSession();
-
     if (!_isWithinTimeRange()) {
       return _errorScreen("Di luar jam absensi (07.00 - 17.00)");
-    }
-
-    if (session == "invalid_checkout") {
-      return _errorScreen(
-        "Tidak bisa absen sekarang.\n"
-        "Check-in: 07.00 - 08.00\n"
-        "Check-out: 09.00 - 17.00",
-      );
     }
 
     return Scaffold(
@@ -168,22 +174,6 @@ class _BuatQRPageState extends State<BuatQRPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF345A75),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            session == "check_in"
-                                ? "SESI CHECK-IN"
-                                : "SESI CHECK-OUT",
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
                         const SizedBox(height: 10),
                         Text(
                           "Tanggal : ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
@@ -229,7 +219,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
   }
 
   // ======================================================
-  // ERROR SCREEN SESUAI GAMBAR
+  // ERROR SCREEN
   Widget _errorScreen(String text) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -269,10 +259,10 @@ class _BuatQRPageState extends State<BuatQRPage> {
                       ),
                     ),
                     const SizedBox(height: 15),
-                    const Text(
-                      "SESI ABSENSI SUDAH\nMELEWATI WAKTU\n07.00 – 17.00 WIB",
+                    Text(
+                      text,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.red,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
