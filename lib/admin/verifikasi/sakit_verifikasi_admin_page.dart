@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:languo/admin/rekapan/sakit_rekapan_admin_page.dart';
+import '../../../services/sakit_service.dart';
+import 'package:universal_html/html.dart' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 
 class VerifikasiSakitPage extends StatefulWidget {
   final String role;
@@ -11,20 +16,10 @@ class VerifikasiSakitPage extends StatefulWidget {
 }
 
 class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
+  final _sakitService = SakitService();
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
-
-  List<Map<String, String>> dataSakit = [
-    {
-      "nama": "Han Jisung",
-      "tanggal": "11 November 2025",
-      "email": "Hanji@gmail.com",
-      "keterangan": "Demam tinggi dan flu",
-      "file": "surat_sakit.pdf",
-    },
-  ];
-
   String keyword = "";
 
   // ============================================================
@@ -83,7 +78,7 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
   // ============================================================
   // POPUP KONFIRMASI TOLAK
   // ============================================================
-  void showRejectConfirm(BuildContext context) {
+  void showRejectConfirm(BuildContext context, String sakitId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -125,9 +120,18 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: InkWell(
-                        onTap: () {
+                        onTap: () async {
                           Navigator.pop(context);
-                          showRejectSuccess(context);
+                          try {
+                            await _sakitService.rejectPengajuanSakit(sakitId);
+                            if (mounted) showRejectSuccess(context);
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Gagal menolak: $e")),
+                              );
+                            }
+                          }
                         },
                         child: Container(
                           height: 45,
@@ -204,6 +208,27 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
         );
       },
     );
+  }
+
+  Future<void> openPdf(String url, BuildContext context) async {
+    if (kIsWeb) {
+      html.window.open(url, '_blank');
+    } else {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal membuka lampiran')),
+          );
+        }
+      }
+    }
+  }
+
+  String _formatTanggal(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
   }
 
   // ============================================================
@@ -313,11 +338,11 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
       child: GestureDetector(
         onTap: () {
           if (index == 1) {
-            String role = widget.role; // role dari halaman sebelumnya
+            String role = widget.role;
 
-            // ⬇ jika role tidak ditemukan, default ke murid
-            if (role != "Admin" && role != "Karyawan" && role != "Murid") {
-              role = "Murid";
+            // ⬇ jika role tidak ditemukan, default ke karyawan
+            if (role != "Karyawan" && role != "Dosen"){
+              role = "Karyawan";
             }
 
             Navigator.push(
@@ -381,21 +406,79 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
 
   // LIST IZIN SAKIT
   Widget SakitList() {
-    var filtered = dataSakit
-        .where((e) => e["nama"]!.toLowerCase().contains(keyword))
-        .toList();
+    return StreamBuilder<QuerySnapshot>(
+      stream: _sakitService.getAllPengajuanSakitAdmin(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 10),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        return SakitCard(filtered[index], index);
+        final docs = snapshot.data?.docs ?? [];
+
+        // Filter hanya status "Diajukan"
+        final diajukanDocs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['status'] == 'Diajukan';
+        }).toList();
+
+        if (diajukanDocs.isEmpty) {
+          return const Center(
+            child: Text(
+              "Tidak ada pengajuan sakit",
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+          );
+        }
+
+        // Filter berdasarkan keyword
+        var filtered = diajukanDocs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final nama = (data['userName'] ?? '').toString().toLowerCase();
+          return nama.contains(keyword);
+        }).toList();
+
+        if (filtered.isEmpty && keyword.isNotEmpty) {
+          return const Center(
+            child: Text(
+              "Pengguna tidak ditemukan",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 10),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final doc = filtered[index];
+            final data = doc.data() as Map<String, dynamic>;
+            return SakitCard(doc.id, data, index);
+          },
+        );
       },
     );
   }
 
-  Widget SakitCard(Map<String, String> item, int index) {
+  Widget SakitCard(String sakitId, Map<String, dynamic> data, int index) {
     bool isExpanded = expandedIndex == index;
+
+    final nama = data['userName'] ?? '-';
+    final email = data['userEmail'] ?? '-';
+    final keterangan = data['keterangan'] ?? '-';
+    final lampiranUrl = data['lampiranUrl'] as String?;
+    final fileName = data['fileName'] ?? 'surat_sakit.pdf';
+
+    final tanggalMulai = (data['tanggalMulai'] as Timestamp?)?.toDate();
+    final tanggalSelesai = (data['tanggalSelesai'] as Timestamp?)?.toDate();
+
+    String periode = "-";
+    if (tanggalMulai != null && tanggalSelesai != null) {
+      periode =
+          "${_formatTanggal(tanggalMulai)} s.d ${_formatTanggal(tanggalSelesai)}";
+    }
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -416,14 +499,14 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item["nama"]!,
+                    Text(nama,
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
                     const Text("Periode Izin :",
                         style: TextStyle(color: Colors.black54)),
                     Text(
-                      "${item["tanggal"]} s.d ${item["tanggal"]}",
+                      periode,
                       style: const TextStyle(
                           fontSize: 10,
                           color: Color(0xFFDA3B26),
@@ -472,39 +555,52 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
           ),
           if (isExpanded) ...[
             const SizedBox(height: 15),
-            detailRow("Alamat Email :", item["email"]!),
-            detailRow("Tanggal :", item["tanggal"]!),
-            detailRow("Keterangan :", item["keterangan"]!),
+            detailRow("Alamat Email :", email),
+            detailRow("Tanggal :", periode),
+            detailRow("Keterangan :", keterangan),
             const SizedBox(height: 15),
-            GestureDetector(
-              onTap: () {},
-              child: Container(
-                height: 45,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDA3B26),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.picture_as_pdf, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text("File", style: TextStyle(color: Colors.white)),
-                  ],
+            if (lampiranUrl != null && lampiranUrl.isNotEmpty)
+              GestureDetector(
+                onTap: () => openPdf(lampiranUrl, context),
+                child: Container(
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDA3B26),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.picture_as_pdf, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text("File ($fileName)",
+                          style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
                 ),
               ),
-            ),
             const SizedBox(height: 15),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 GestureDetector(
-                  onTap: () => showRejectConfirm(context),
+                  onTap: () => showRejectConfirm(context, sakitId),
                   child: buildActionButton("TOLAK", Colors.red),
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () => showSuccessPopup(context),
+                  onTap: () async {
+                    try {
+                      await _sakitService.approvePengajuanSakit(sakitId);
+                      if (mounted) showSuccessPopup(context);
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Gagal menyetujui: $e")),
+                        );
+                      }
+                    }
+                  },
                   child: buildActionButton("TERIMA", const Color(0xFF36546C)),
                 ),
               ],

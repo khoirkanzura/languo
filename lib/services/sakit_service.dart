@@ -97,6 +97,50 @@ class SakitService {
         .snapshots();
   }
 
+  /// ADMIN: Ambil semua pengajuan sakit dengan status "Diajukan"
+  Stream<QuerySnapshot> getAllPengajuanSakitAdmin() {
+    return _firestore
+        .collection("pengajuan_sakit")
+        .orderBy("createdAt", descending: true)
+        .snapshots();
+  }
+
+  /// ADMIN: Ambil semua rekapan sakit (Disetujui & Ditolak)
+  Stream<QuerySnapshot> getAllRekapanSakitAdmin() {
+    return _firestore
+        .collection("pengajuan_sakit")
+        .orderBy("createdAt", descending: true)
+        .snapshots();
+  }
+
+  /// ADMIN: Setujui pengajuan sakit
+  Future<void> approvePengajuanSakit(String sakitId) async {
+    try {
+      await _firestore.collection("pengajuan_sakit").doc(sakitId).update({
+        "status": "Disetujui",
+        "approvedAt": FieldValue.serverTimestamp(),
+      });
+      debugPrint("Pengajuan sakit $sakitId disetujui");
+    } catch (e) {
+      debugPrint("Error approvePengajuanSakit: $e");
+      rethrow;
+    }
+  }
+
+  /// ADMIN: Tolak pengajuan sakit
+  Future<void> rejectPengajuanSakit(String sakitId) async {
+    try {
+      await _firestore.collection("pengajuan_sakit").doc(sakitId).update({
+        "status": "Ditolak",
+        "rejectedAt": FieldValue.serverTimestamp(),
+      });
+      debugPrint("Pengajuan sakit $sakitId ditolak");
+    } catch (e) {
+      debugPrint("Error rejectPengajuanSakit: $e");
+      rethrow;
+    }
+  }
+
   /// Hapus pengajuan sakit + lampiran
   Future<void> hapusPengajuanSakit(String sakitId) async {
     try {
