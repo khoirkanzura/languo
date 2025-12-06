@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Languo SIAKU',
+      title: 'SIPRES-JTI',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
