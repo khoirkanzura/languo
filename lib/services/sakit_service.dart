@@ -147,21 +147,30 @@ class SakitService {
       final docRef = _firestore.collection("pengajuan_sakit").doc(sakitId);
       final doc = await docRef.get();
 
-      if (!doc.exists) throw Exception("Pengajuan sakit tidak ditemukan.");
+      if (!doc.exists) {
+        throw Exception("Pengajuan sakit tidak ditemukan.");
+      }
 
       final data = doc.data();
       final storagePath = data?['storagePath'] as String?;
 
+      // Hapus file di storage jika ada
       if (storagePath != null && storagePath.isNotEmpty) {
-        final ref = _storage.ref().child(storagePath);
-        await ref.delete();
-        debugPrint("Lampiran berhasil dihapus: $storagePath");
+        try {
+          final ref = _storage.ref().child(storagePath);
+          await ref.delete();
+          debugPrint("✅ Lampiran berhasil dihapus: $storagePath");
+        } catch (e) {
+          debugPrint("⚠️ Warning: Gagal menghapus lampiran: $e");
+          // Lanjutkan tetap hapus dokumen meskipun gagal hapus file
+        }
       }
 
+      // Hapus dokumen dari Firestore
       await docRef.delete();
-      debugPrint("Dokumen sakit $sakitId berhasil dihapus");
+      debugPrint("✅ Dokumen sakit $sakitId berhasil dihapus");
     } catch (e) {
-      debugPrint("Error hapusPengajuan Sakit: $e");
+      debugPrint("❌ Error hapusPengajuan Sakit: $e");
       rethrow;
     }
   }

@@ -404,7 +404,7 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
     );
   }
 
-  // LIST IZIN SAKIT
+  // LIST IZIN SAKIT DENGAN FILTER ROLE
   Widget SakitList() {
     return StreamBuilder<QuerySnapshot>(
       stream: _sakitService.getAllPengajuanSakitAdmin(),
@@ -418,22 +418,26 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
 
         final docs = snapshot.data?.docs ?? [];
 
-        // Filter hanya status "Diajukan"
+        // ========== FILTER BERDASARKAN STATUS DAN ROLE ==========
         final diajukanDocs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['status'] == 'Diajukan';
+          final status = data['status'] ?? '';
+          final userRole = data['userRole'] ?? '';
+          
+          // Filter: status = "Diajukan" DAN userRole sesuai widget.role (Karyawan atau Dosen)
+          return status == 'Diajukan' && userRole == widget.role;
         }).toList();
 
         if (diajukanDocs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              "Tidak ada pengajuan sakit",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+              "Tidak ada pengajuan sakit untuk ${widget.role}",
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
           );
         }
 
-        // Filter berdasarkan keyword
+        // Filter berdasarkan keyword pencarian
         var filtered = diajukanDocs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final nama = (data['userName'] ?? '').toString().toLowerCase();
