@@ -222,17 +222,14 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
 
           Text("Alamat Email :", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(data['email'] ?? "-"),
-          const SizedBox(height: 8),
+          Text(
+            data['userEmail'] ?? data['email'] ?? "-",
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
 
           Text("Alasan :", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(data['keterangan'] ?? "-"),
-          const SizedBox(height: 8),
-
-          Text("Sisa izin :", style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text("${data['sisaIzin'] ?? '-'} hari"),
           const SizedBox(height: 8),
 
           Text("Tanggal :", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -350,6 +347,7 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
     return FirebaseFirestore.instance
         .collection('pengajuan_izin')
         .where('status', isEqualTo: 'Diajukan')
+        .where('userRole', isEqualTo: widget.role) // hanya role yg sesuai
         .snapshots();
   }
 
@@ -406,6 +404,8 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
 
   // ====================== POPUP KONFIRM TOLAK (update firestore ketika YA) ======================
   void showRejectConfirm(BuildContext context, String id) {
+    final currentContext = context; // simpan context yang valid
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -448,22 +448,26 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
                     Expanded(
                       child: InkWell(
                         onTap: () async {
-                          // perform update to firestore
-                          Navigator.pop(context);
+                          Navigator.pop(context); // tutup dialog dulu
                           try {
                             await FirebaseFirestore.instance
                                 .collection('pengajuan_izin')
                                 .doc(id)
                                 .update({"status": "Ditolak"});
-                            showRejectSuccess(context);
+
+                            // cek apakah widget masih mounted
+                            if (!mounted) return;
+
+                            // pakai context yang valid
+                            showRejectSuccess(currentContext);
+
+                            setState(() => expandedIndex = -1);
                           } catch (e) {
-                            // show error
-                            ScaffoldMessenger.of(this.context).showSnackBar(
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(currentContext).showSnackBar(
                               SnackBar(content: Text('Gagal menolak: $e')),
                             );
                           }
-                          // close expanded view
-                          setState(() => expandedIndex = -1);
                         },
                         child: Container(
                           height: 45,

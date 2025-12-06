@@ -41,7 +41,9 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
   Stream<QuerySnapshot> getRekapanIzin() {
     return FirebaseFirestore.instance
         .collection("pengajuan_izin")
-        .where("status", whereIn: ["Disetujui", "Ditolak"]).snapshots();
+        .where("status", whereIn: ["Disetujui", "Ditolak"])
+        .where("userRole", isEqualTo: widget.role) // filter role sesuai
+        .snapshots();
   }
 
   // -------------------------------------------------------------------------
