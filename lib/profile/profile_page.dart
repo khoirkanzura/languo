@@ -10,10 +10,21 @@ import 'notifikasi_user_page.dart';
 import 'notifikasi_admin_page.dart';
 import 'faq_user_page.dart';
 import 'faq_admin_page.dart';
-import 'logout_dialog.dart'; // PASTIKAN INI ADA!
+import 'logout_dialog.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../screen/buat_qr.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String? _lastScannedData;
+  String? _userRole;
 
   Future<UserModel?> getUserData() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -25,6 +36,9 @@ class ProfilePage extends StatelessWidget {
         .get();
 
     if (!doc.exists) return null;
+
+    // set userRole agar bisa dipakai di bottom nav
+    _userRole ??= doc['user_role'] ?? 'Karyawan';
 
     return UserModel.fromFirestore(doc);
   }
@@ -341,17 +355,14 @@ class ProfilePage extends StatelessWidget {
               GestureDetector(
                 onTap: () async {
                   final uid = FirebaseAuth.instance.currentUser!.uid;
-
-                  // ambil data user dari Firestore
                   final userDoc = await FirebaseFirestore.instance
                       .collection('users')
                       .doc(uid)
                       .get();
-
-                  final userRole = userDoc['user_role'];
+                  final role = userDoc['user_role'];
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => getHomeByRole(userRole)),
+                    MaterialPageRoute(builder: (_) => getHomeByRole(role)),
                   );
                 },
                 child: Column(
@@ -395,28 +406,53 @@ class ProfilePage extends StatelessWidget {
           top: -20,
           child: GestureDetector(
             onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => BuatQRPage()),
-              );
+              if (_userRole == "Admin") {
+                // Admin: buka halaman BuatQRPage
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BuatQRPage()),
+                );
+              } else {
+                // Karyawan/Dosen: buka halaman QRScannerPage
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BuatQRPage()),
+                );
+                if (!mounted) return;
+                if (result != null) {
+                  setState(() {
+                    _lastScannedData = result;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("QR Code berhasil dipindai!"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              }
             },
             child: Container(
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: Color(0xFF36546C),
+                color: const Color(0xFF36546C),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
                     blurRadius: 15,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   ),
                 ],
                 border: Border.all(color: Colors.white, width: 4),
               ),
               child: Center(
-                child: Icon(Icons.add, color: Colors.white, size: 38),
+                child: Icon(
+                  _userRole == "Admin" ? Icons.add : Icons.qr_code_scanner,
+                  color: Colors.white,
+                  size: _userRole == "Admin" ? 38 : 32,
+                ),
               ),
             ),
           ),
