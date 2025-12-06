@@ -700,9 +700,9 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
           if (index == 1) {
             String role = widget.role; // role dari halaman sebelumnya
 
-            // ⬇ jika role tidak ditemukan, default ke murid
-            if (role != "Admin" && role != "Karyawan" && role != "Murid") {
-              role = "Murid";
+            // ⬇ jika role tidak ditemukan, default ke dosen
+            if (role != "Admin" && role != "Karyawan" && role != "Dosen") {
+              role = "Dosen";
             }
 
             Navigator.push(
