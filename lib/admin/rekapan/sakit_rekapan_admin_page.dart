@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:languo/admin/verifikasi/sakit_verifikasi_admin_page.dart';
+import '../../../services/sakit_service.dart';
+import 'package:universal_html/html.dart' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 
 class RekapanAdminSakitPage extends StatefulWidget {
   final String role;
@@ -11,34 +16,14 @@ class RekapanAdminSakitPage extends StatefulWidget {
 }
 
 class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
+  final _sakitService = SakitService();
   int selectedTab = 1; // langsung ke REKAPAN
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
-
-  // DATA HANYA MENAMPILKAN YANG DITERIMA / DITOLAK
-  List<Map<String, String>> dataSakit = [
-    {
-      "nama": "Kartika Tri Juliana",
-      "periode": "30 Nov 2025 s.d 1 Des 2025",
-      "email": "kartika@gmail.com",
-      "tanggal": "11 November 2025",
-      "file": "surat_sakit.pdf",
-      "status": "Disetujui",
-    },
-    {
-      "nama": "Elizabeth",
-      "periode": "30 Nov 2025 s.d 1 Des 2025",
-      "email": "eliza@gmail.com",
-      "tanggal": "12 November 2025",
-      "file": "surat_sakit.pdf",
-      "status": "Ditolak",
-    },
-  ];
-
   String keyword = "";
 
   // POPUP HAPUS
-  void showDeleteConfirm(BuildContext context) {
+  void showDeleteConfirm(BuildContext context, String sakitId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -79,8 +64,23 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: InkWell(
-                        onTap: () {
+                        onTap: () async {
                           Navigator.pop(context);
+                          try {
+                            await _sakitService.hapusPengajuanSakit(sakitId);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("Data berhasil dihapus")),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Gagal menghapus: $e")),
+                              );
+                            }
+                          }
                         },
                         child: Container(
                           height: 45,
@@ -104,6 +104,27 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
         );
       },
     );
+  }
+
+  Future<void> openPdf(String url, BuildContext context) async {
+    if (kIsWeb) {
+      html.window.open(url, '_blank');
+    } else {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal membuka lampiran')),
+          );
+        }
+      }
+    }
+  }
+
+  String _formatTanggal(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
   }
 
   // ============================================================
@@ -275,25 +296,90 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
 
   // LIST REKAPAN
   Widget RekapanList() {
-    var filtered = dataSakit
-        .where((e) => e["nama"]!.toLowerCase().contains(keyword))
-        .toList();
+    return StreamBuilder<QuerySnapshot>(
+      stream: _sakitService.getAllRekapanSakitAdmin(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 10),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        return SakitCard(filtered[index], index);
+        final docs = snapshot.data?.docs ?? [];
+
+        // Filter hanya status "Disetujui" dan "Ditolak"
+        final rekapanDocs = docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final status = data['status'] ?? '';
+          return status == 'Disetujui' || status == 'Ditolak';
+        }).toList();
+
+        if (rekapanDocs.isEmpty) {
+          return const Center(
+            child: Text(
+              "Tidak ada rekapan sakit",
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+          );
+        }
+
+        // Filter berdasarkan keyword
+        var filtered = rekapanDocs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final nama = (data['userName'] ?? '').toString().toLowerCase();
+          return nama.contains(keyword);
+        }).toList();
+
+        if (filtered.isEmpty && keyword.isNotEmpty) {
+          return const Center(
+            child: Text(
+              "Pengguna tidak ditemukan",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 10),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final doc = filtered[index];
+            final data = doc.data() as Map<String, dynamic>;
+            return SakitCard(doc.id, data, index);
+          },
+        );
       },
     );
   }
 
   // CARD UTAMA
-  Widget SakitCard(Map<String, String> item, int index) {
+  Widget SakitCard(String sakitId, Map<String, dynamic> data, int index) {
     bool isExpanded = expandedIndex == index;
 
+    final nama = data['userName'] ?? '-';
+    final email = data['userEmail'] ?? '-';
+    final status = data['status'] ?? 'Diajukan';
+    final lampiranUrl = data['lampiranUrl'] as String?;
+    final fileName = data['fileName'] ?? 'surat_sakit.pdf';
+
+    final tanggalMulai = (data['tanggalMulai'] as Timestamp?)?.toDate();
+    final tanggalSelesai = (data['tanggalSelesai'] as Timestamp?)?.toDate();
+    final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+
+    String periode = "-";
+    if (tanggalMulai != null && tanggalSelesai != null) {
+      periode =
+          "${_formatTanggal(tanggalMulai)} s.d ${_formatTanggal(tanggalSelesai)}";
+    }
+
+    String tanggalPengajuan = "-";
+    if (createdAt != null) {
+      tanggalPengajuan = _formatTanggal(createdAt);
+    }
+
     Color badgeColor =
-        item["status"] == "Disetujui" ? Colors.green : Colors.red;
+        status == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -318,13 +404,13 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item["nama"]!,
+                    Text(nama,
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 6),
                     const Text("Periode Sakit :",
                         style: TextStyle(color: Colors.black54)),
-                    Text(item["periode"]!,
+                    Text(periode,
                         style: const TextStyle(
                             color: Color(0xFFDA3B26),
                             fontWeight: FontWeight.bold)),
@@ -345,7 +431,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      item["status"]!,
+                      status,
                       style: const TextStyle(color: Colors.white),
                     ),
                   ),
@@ -383,27 +469,33 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
           if (isExpanded) ...[
             const SizedBox(height: 15),
 
-            detailRow("Alamat Email :", item["email"]!),
-            detailRow("Tanggal :", item["tanggal"]!),
+            detailRow("Alamat Email :", email),
+            detailRow("Tanggal Pengajuan :", tanggalPengajuan),
+            detailRow("Status :", status),
 
             const SizedBox(height: 15),
 
             // FILE BUTTON
-            Container(
-              height: 45,
-              decoration: BoxDecoration(
-                color: Colors.deepOrange,
-                borderRadius: BorderRadius.circular(10),
+            if (lampiranUrl != null && lampiranUrl.isNotEmpty)
+              GestureDetector(
+                onTap: () => openPdf(lampiranUrl, context),
+                child: Container(
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.deepOrange,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.picture_as_pdf, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text("File ($fileName)",
+                          style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.picture_as_pdf, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text("File", style: TextStyle(color: Colors.white)),
-                ],
-              ),
-            ),
 
             const SizedBox(height: 15),
 
@@ -411,7 +503,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () => showDeleteConfirm(context),
+                onTap: () => showDeleteConfirm(context, sakitId),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
