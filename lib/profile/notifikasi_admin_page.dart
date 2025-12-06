@@ -142,7 +142,7 @@ class _NotifikasiAdminPageState extends State<NotifikasiAdminPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const CutiPage(
+                                builder: (_) => const VerifikasiCutiPage(
                                       role: 'Karyawan',
                                     )),
                           );
@@ -151,7 +151,7 @@ class _NotifikasiAdminPageState extends State<NotifikasiAdminPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const IzinPage(
+                                builder: (_) => const VerifikasiIzinPage(
                                       role: 'Karyawan',
                                     )),
                           );
@@ -160,7 +160,7 @@ class _NotifikasiAdminPageState extends State<NotifikasiAdminPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const SakitPage(
+                                builder: (_) => const VerifikasiSakitPage(
                                       role: 'Karyawan',
                                     )),
                           );
