@@ -1,43 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/cuti_page.dart';
+import 'package:languo/admin/rekapan/sakit_rekapan_admin_page.dart';
 
-class CutiPage extends StatefulWidget {
-  final String role; // menerima role dari halaman sebelumnya
+class VerifikasiSakitPage extends StatefulWidget {
+  final String role;
 
-  const CutiPage({super.key, required this.role});
+  const VerifikasiSakitPage({super.key, required this.role});
 
   @override
-  State<CutiPage> createState() => _CutiPageState();
+  State<VerifikasiSakitPage> createState() => _VerifikasiSakitPageState();
 }
 
-class _CutiPageState extends State<CutiPage> {
+class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  List<Map<String, String>> dataIzin = [
+  List<Map<String, String>> dataSakit = [
     {
-      "nama": "GERLY VAEYUNGFAN",
+      "nama": "Han Jisung",
       "tanggal": "11 November 2025",
-      "email": "gerlyvaeyungfan@gmail.com",
-      "alasan": "Mengambil Cuti Tahunan",
-      "file": "surat_izin2.pdf",
-      "sisa": "3 hari",
-    },
-    {
-      "nama": "BUDI HARTONO",
-      "tanggal": "12 November 2025",
-      "email": "budi@gmail.com",
-      "alasan": "Izin pergi ke rumah sakit",
-      "jenis": "Izin Sakit",
-      "file": "surat_izin2.pdf",
-      "sisa": "2 hari"
+      "email": "Hanji@gmail.com",
+      "keterangan": "Demam tinggi dan flu",
+      "file": "surat_sakit.pdf",
     },
   ];
 
   String keyword = "";
 
-  // ====================== POPUP TERIMA ======================
+  // ============================================================
+  // POPUP TERIMA
+  // ============================================================
   void showSuccessPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -62,7 +54,7 @@ class _CutiPageState extends State<CutiPage> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  "Pengajuan telah diterima",
+                  "Pengajuan telah disetujui",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -88,7 +80,9 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // ====================== POPUP KONFIRM TOLAK ======================
+  // ============================================================
+  // POPUP KONFIRMASI TOLAK
+  // ============================================================
   void showRejectConfirm(BuildContext context) {
     showDialog(
       context: context,
@@ -159,7 +153,9 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // ====================== POPUP TOLAK SUKSES ======================
+  // ============================================================
+  // POPUP TOLAK SUKSES
+  // ============================================================
   void showRejectSuccess(BuildContext context) {
     showDialog(
       context: context,
@@ -210,7 +206,9 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // ====================== UI ======================
+  // ============================================================
+  // UI
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,13 +218,13 @@ class _CutiPageState extends State<CutiPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: CutiList()),
+          Expanded(child: SakitList()),
         ],
       ),
     );
   }
 
-  // HEADER (DINAMIC ROLE)
+  // HEADER
   Widget header() {
     return Container(
       height: 160,
@@ -243,19 +241,15 @@ class _CutiPageState extends State<CutiPage> {
         child: Align(
           alignment: Alignment.centerLeft,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 26,
-                ),
+                onTap: () => Navigator.pop(context),
+                child:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 10),
               Text(
-                "Cuti  <  ${widget.role}",
+                "Sakit  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -269,7 +263,7 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // TAB BAR
+  // TAB BAR + LOGIKA PINDAH HALAMAN
   Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
@@ -329,7 +323,7 @@ class _CutiPageState extends State<CutiPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RekapanAdminCutiPage(role: role),
+                builder: (_) => RekapanAdminSakitPage(role: role),
               ),
             );
             return;
@@ -385,9 +379,9 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // LIST IZIN
-  Widget CutiList() {
-    var filtered = dataIzin
+  // LIST IZIN SAKIT
+  Widget SakitList() {
+    var filtered = dataSakit
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
 
@@ -395,12 +389,12 @@ class _CutiPageState extends State<CutiPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return izinCard(filtered[index], index);
+        return SakitCard(filtered[index], index);
       },
     );
   }
 
-  Widget izinCard(Map<String, String> item, int index) {
+  Widget SakitCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
     return AnimatedContainer(
@@ -431,6 +425,7 @@ class _CutiPageState extends State<CutiPage> {
                     Text(
                       "${item["tanggal"]} s.d ${item["tanggal"]}",
                       style: const TextStyle(
+                          fontSize: 10,
                           color: Color(0xFFDA3B26),
                           fontWeight: FontWeight.bold),
                     ),
@@ -478,9 +473,8 @@ class _CutiPageState extends State<CutiPage> {
           if (isExpanded) ...[
             const SizedBox(height: 15),
             detailRow("Alamat Email :", item["email"]!),
-            detailRow("Alasan :", item["alasan"]!),
-            detailRow("Sisa cuti :", item["sisa"]!),
             detailRow("Tanggal :", item["tanggal"]!),
+            detailRow("Keterangan :", item["keterangan"]!),
             const SizedBox(height: 15),
             GestureDetector(
               onTap: () {},
@@ -530,7 +524,8 @@ class _CutiPageState extends State<CutiPage> {
           Text(label,
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value, style: const TextStyle(fontSize: 13)),
+          Text(value,
+              style: const TextStyle(fontSize: 13, color: Colors.black54)),
         ],
       ),
     );

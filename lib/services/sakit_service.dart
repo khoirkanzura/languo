@@ -60,7 +60,7 @@ class SakitService {
       final userDoc = await _firestore.collection("users").doc(userId).get();
       final userName = userDoc.data()?["user_name"] ?? "-";
       final userRole = userDoc.data()?["user_role"] ?? "-";
-      final emailUser = userDoc.data()?["user_email"] ?? "-";
+      final userEmail = userDoc.data()?["user_email"] ?? "-";
 
       final uploadResult = await uploadLampiran(
         bytes: lampiranBytes,
@@ -71,8 +71,8 @@ class SakitService {
       await _firestore.collection("pengajuan_sakit").add({
         "userId": userId,
         "userName": userName,
-        "emailUser": emailUser,
         "userRole": userRole,
+        "userEmail": userEmail,
         "tanggalMulai": Timestamp.fromDate(startDate),
         "tanggalSelesai": Timestamp.fromDate(endDate),
         "keterangan": keterangan,

@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/cuti_page.dart';
+import 'package:languo/admin/verifikasi/izin_verifikasi_admin_page.dart';
 
-class RekapanAdminCutiPage extends StatefulWidget {
+class RekapanAdminIzinPage extends StatefulWidget {
   final String role;
 
-  const RekapanAdminCutiPage({super.key, required this.role});
+  const RekapanAdminIzinPage({super.key, required this.role});
 
   @override
-  State<RekapanAdminCutiPage> createState() => _RekapanAdminCutiPageState();
+  State<RekapanAdminIzinPage> createState() => _RekapanAdminIzinPageState();
 }
 
-class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
+class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
   int selectedTab = 1; // langsung ke REKAPAN
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
   // DATA HANYA MENAMPILKAN YANG DITERIMA / DITOLAK
-  List<Map<String, String>> dataCuti = [
+  List<Map<String, String>> dataIzin = [
     {
-      "nama": "GERLY VAEYUNGFAN",
+      "nama": "BUDI HARTONO",
       "mulai": "12 November 2025",
       "selesai": "15 November 2025",
-      "email": "gerlyvaeyungfan@gmail.com",
-      "alasan": "Mengambil Cuti Tahunan",
-      "file": "surat_Cuti2.pdf",
-      "sisa": "3 hari",
-      "status": "Diterima",
+      "email": "budi@gmail.com",
+      "alasan": "Izin pergi ke rumah sakit",
+      "jenis": "Izin sakit",
+      "file": "surat_izin2.pdf",
+      "sisa": "2 hari",
+      "status": "Disetujui",
+    },
+    {
+      "nama": "BUDI HARTONO",
+      "mulai": "10 November 2025",
+      "selesai": "13 November 2025",
+      "email": "budi@gmail.com",
+      "alasan": "Izin pergi ke rumah sakit",
+      "jenis": "Izin Sakit",
+      "file": "surat_izin2.pdf",
+      "sisa": "2 hari",
+      "status": "Ditolak",
     },
   ];
 
@@ -144,7 +156,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Cuti <  ${widget.role}",
+                "Izin  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -203,7 +215,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
     );
   }
 
-// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/cuti_page)
+// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/sakit_page)
   Widget _tab(String title, int index) {
     return Expanded(
       child: GestureDetector(
@@ -213,7 +225,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => CutiPage(role: widget.role),
+                builder: (_) => VerifikasiIzinPage(role: widget.role),
               ),
             );
           } else {
@@ -269,7 +281,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
 
   // LIST REKAPAN
   Widget RekapanList() {
-    var filtered = dataCuti
+    var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
 
@@ -277,16 +289,16 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return CutiCard(filtered[index], index);
+        return IzinCard(filtered[index], index);
       },
     );
   }
 
   // CARD UTAMA
-  Widget CutiCard(Map<String, String> item, int index) {
+  Widget IzinCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Diterima" ? Colors.green : Colors.red;
+    Color badgeColor = item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -315,7 +327,7 @@ class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 6),
-                    const Text("Periode Cuti :",
+                    const Text("Periode Izin :",
                         style: TextStyle(color: Colors.black54)),
                     RichText(
                       text: TextSpan(

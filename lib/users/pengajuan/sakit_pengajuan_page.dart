@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:languo/users/rekapan/sakit_page.dart';
+import 'package:languo/users/rekapan/sakit_rekapan_user_page.dart';
 import '../../../services/sakit_service.dart';
 
 class PengajuanSakitPage extends StatefulWidget {
@@ -80,10 +80,6 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
     }
     if (lampiranBytes == null || lampiranName == null) {
       _showMessage("Lampiran belum diupload");
-      return false;
-    }
-    if (keteranganController.text.isEmpty) {
-      _showMessage("Keterangan masih kosong");
       return false;
     }
     return true;

@@ -4,8 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screen/login_screen.dart';
 import '../screen/register_screen.dart';
 import '../admin/home_page.dart';
-import '../users/karyawan/home_page.dart';
-import '../users/dosen/home_page.dart';
+import '../users/home_page.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -22,14 +21,14 @@ class _AuthPageState extends State<AuthPage> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Loading state
+        // Loading while checking login
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // User SUDAH login → Home
+        // User sudah login
         if (snapshot.hasData) {
           final user = snapshot.data!;
 
@@ -53,38 +52,28 @@ class _AuthPageState extends State<AuthPage> {
 
               final role = roleSnap.data!.get('user_role');
 
+              // 👉 Routing berdasarkan role
               if (role == "Admin") {
                 return const HomeAdmin();
-              } else if (role == "Karyawan") {
-                return const HomeKaryawan();
-              } else if (role == "Dosen") {
-                return const HomeDosen();
               } else {
-                return const Scaffold(
-                  body: Center(child: Text("Role tidak dikenali")),
-                );
+                return const HomePageUser();
               }
             },
           );
         }
 
-        // User BELUM login → LoginScreen atau RegisterScreen
-        debugPrint(
-            "User not logged in - showing ${showLogin ? 'Login' : 'Register'}");
-
-        if (showLogin) {
-          return LoginScreen(
-            onRegisterTap: () {
-              setState(() => showLogin = false);
-            },
-          );
-        } else {
-          return RegisterScreen(
-            onSignInTap: () {
-              setState(() => showLogin = true);
-            },
-          );
-        }
+        // User belum login → login atau register
+        return showLogin
+            ? LoginScreen(
+                onRegisterTap: () {
+                  setState(() => showLogin = false);
+                },
+              )
+            : RegisterScreen(
+                onSignInTap: () {
+                  setState(() => showLogin = true);
+                },
+              );
       },
     );
   }

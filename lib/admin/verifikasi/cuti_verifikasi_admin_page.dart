@@ -1,29 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/izin_page.dart';
+import 'package:languo/admin/rekapan/cuti_rekapan_admin_page.dart';
 
-class IzinPage extends StatefulWidget {
+class VerifikasiCutiPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya
 
-  const IzinPage({super.key, required this.role});
+  const VerifikasiCutiPage({super.key, required this.role});
 
   @override
-  State<IzinPage> createState() => _IzinPageState();
+  State<VerifikasiCutiPage> createState() => _VerifikasiCutiPageState();
 }
 
-class _IzinPageState extends State<IzinPage> {
+class _VerifikasiCutiPageState extends State<VerifikasiCutiPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
   List<Map<String, String>> dataIzin = [
     {
-      "nama": "ANDI SAPUTRA",
+      "nama": "GERLY VAEYUNGFAN",
       "tanggal": "11 November 2025",
-      "email": "andi@gmail.com",
-      "alasan": "Izin karena keperluan keluarga",
-      "jenis": "Izin Tidak Masuk",
-      "file": "surat_izin1.pdf",
-      "sisa": "4 hari"
+      "email": "gerlyvaeyungfan@gmail.com",
+      "alasan": "Mengambil Cuti Tahunan",
+      "file": "surat_izin2.pdf",
+      "sisa": "3 hari",
     },
     {
       "nama": "BUDI HARTONO",
@@ -63,7 +62,7 @@ class _IzinPageState extends State<IzinPage> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  "Pengajuan telah diterima",
+                  "Pengajuan telah disetujui",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -221,7 +220,7 @@ class _IzinPageState extends State<IzinPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: IzinList()),
+          Expanded(child: CutiList()),
         ],
       ),
     );
@@ -256,7 +255,7 @@ class _IzinPageState extends State<IzinPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Izin  <  ${widget.role}",
+                "Cuti  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -330,7 +329,7 @@ class _IzinPageState extends State<IzinPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RekapanAdminIzinPage(role: role),
+                builder: (_) => RekapanAdminCutiPage(role: role),
               ),
             );
             return;
@@ -387,7 +386,7 @@ class _IzinPageState extends State<IzinPage> {
   }
 
   // LIST IZIN
-  Widget IzinList() {
+  Widget CutiList() {
     var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
