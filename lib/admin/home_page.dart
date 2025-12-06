@@ -329,7 +329,7 @@ class _HomeAdminState extends State<HomeAdmin> {
             _menuItem(Icons.accessibility_new, "Hadir", () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const KehadiranPage()),
+                MaterialPageRoute(builder: (_) => const AdminKehadiranPage()),
               );
             }),
             _menuItem(Icons.list_alt, "Izin", () {
