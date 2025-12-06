@@ -1,3 +1,4 @@
+// file: rekapan_izin_page_a.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +17,6 @@ class IzinRekapanData {
   final String? lampiranName;
   final String keterangan;
   final DateTime tanggalPengajuan;
-
   final String userName;
   final String userEmail;
   final String userClass;
@@ -45,7 +45,8 @@ class RekapanIzinPage extends StatefulWidget {
 }
 
 class _RekapanIzinPageState extends State<RekapanIzinPage> {
-  final _izinService = IzinService();
+  final _izinService =
+      IzinService(); // tetap tersedia (tidak digunakan sebagai stream)
   final _auth = FirebaseAuth.instance;
 
   late Future<Map<String, String>> _userDataFuture;
@@ -83,11 +84,9 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
   @override
   Widget build(BuildContext context) {
     final currentUser = _auth.currentUser;
-
-    if (currentUser == null) {
+    if (currentUser == null)
       return const Center(
           child: Text("Anda harus login untuk melihat rekapan."));
-    }
 
     return FutureBuilder<Map<String, String>>(
       future: _userDataFuture,
@@ -102,12 +101,19 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
 
         final userData = userSnapshot.data!;
 
+        // ===== IMPORTANT: use a firestore query that only filters by userId (avoid composite index)
+        final Stream<QuerySnapshot> stream = FirebaseFirestore.instance
+            .collection('pengajuan_izin')
+            // try to query both possible field names by using "userId" (most likely) — if you persist another naming in DB,
+            // consider migrating; for now this query assumes stored field is "userId"
+            .where('userId', isEqualTo: currentUser.uid)
+            .snapshots();
+
         return Column(
           children: [
-            // ===== LIST REKAPAN IZIN =====
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: _izinService.getRekapanIzin(currentUser.uid),
+                stream: stream,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
@@ -120,43 +126,61 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
 
                   if (docs.isEmpty) {
                     return const Center(
-                      child: Text(
-                        "Belum ada pengajuan izin",
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                    );
+                        child: Text("Belum ada pengajuan izin",
+                            style:
+                                TextStyle(fontSize: 18, color: Colors.grey)));
                   }
 
+                  // Map docs to model, being tolerant to different field names
                   final izinList = docs.map((d) {
                     final data = d.data() as Map<String, dynamic>;
 
-                    DateTime tglMulai =
-                        (data['tanggalMulai'] as Timestamp).toDate();
-                    DateTime tglSelesai =
-                        (data['tanggalSelesai'] as Timestamp).toDate();
+                    // handle timestamp fields with multiple possible names
+                    Timestamp? createdAtTs = (data['createdAt'] is Timestamp)
+                        ? data['createdAt'] as Timestamp
+                        : (data['created_at'] is Timestamp)
+                            ? data['created_at'] as Timestamp
+                            : null;
 
-                    final createdAtTimestamp = data['createdAt'] as Timestamp?;
+                    final DateTime createdAt =
+                        createdAtTs?.toDate() ?? DateTime.now();
 
-                    DateTime tglPengajuan =
-                        createdAtTimestamp?.toDate() ?? DateTime.now();
+                    DateTime tglMulai;
+                    DateTime tglSelesai;
+                    try {
+                      tglMulai = (data['tanggalMulai'] as Timestamp).toDate();
+                    } catch (_) {
+                      tglMulai = DateTime.now();
+                    }
+                    try {
+                      tglSelesai =
+                          (data['tanggalSelesai'] as Timestamp).toDate();
+                    } catch (_) {
+                      tglSelesai = tglMulai;
+                    }
 
                     return IzinRekapanData(
                       id: d.id,
-                      perihal: data['perihal'] ??
-                          'Izin',
+                      perihal: (data['perihal'] ?? 'Izin').toString(),
                       tanggalMulai: tglMulai,
                       tanggalSelesai: tglSelesai,
-                      status: data['status'] ?? "Diajukan",
-                      lampiranUrl: data['lampiranUrl'],
-                      lampiranName: data['fileName'] ??
-                          'Lampiran',
-                      keterangan: data['keterangan'] ?? '-',
-                      tanggalPengajuan: tglPengajuan,
+                      status: (data['status'] ?? 'Diajukan').toString(),
+                      lampiranUrl: (data['lampiranUrl'] ?? data['lampiran_url'])
+                          ?.toString(),
+                      lampiranName:
+                          (data['fileName'] ?? data['file_name'])?.toString() ??
+                              'Lampiran',
+                      keterangan: (data['keterangan'] ?? '-').toString(),
+                      tanggalPengajuan: createdAt,
                       userName: userData['userName']!,
                       userEmail: userData['userEmail']!,
                       userClass: userData['userClass']!,
                     );
                   }).toList();
+
+                  // sort client-side by createdAt desc (newest first)
+                  izinList.sort((a, b) =>
+                      b.tanggalPengajuan.compareTo(a.tanggalPengajuan));
 
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(
@@ -215,16 +239,14 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
       "November",
       "Desember"
     ];
-
     String namaHari = hari[date.weekday % 7];
     String namaBulan = bulan[date.month - 1];
     return "$namaHari, ${date.day} $namaBulan ${date.year}";
   }
 
   void _showMessage(String msg) {
-    if (mounted) {
+    if (mounted)
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    }
   }
 
   Future<void> _hapusPengajuan(String izinId) async {
@@ -252,9 +274,7 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
               Navigator.pop(dCtx);
               _hapusPengajuan(izinId);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text("Hapus", style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -278,24 +298,18 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
   Widget _buildIzinRekapanTile(IzinRekapanData izin, BuildContext context) {
     String periodeIzin =
         "${izin.tanggalMulai.day}/${izin.tanggalMulai.month}/${izin.tanggalMulai.year} s.d. ${izin.tanggalSelesai.day}/${izin.tanggalSelesai.month}/${izin.tanggalSelesai.year}";
-
     final bool canDelete = izin.status.toLowerCase() == 'diajukan';
 
     Widget statusBadge(String status, Color color) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          status,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
+            color: color, borderRadius: BorderRadius.circular(20)),
+        child: Text(status,
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12)),
       );
     }
 
@@ -309,101 +323,87 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
             highlightColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          title: Text(
-            izin.perihal,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Color(0xFF2B3541),
-            ),
-          ),
+          title: Text(izin.perihal,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF2B3541))),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4.0),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    "Periode: $periodeIzin",
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                ),
-              ],
-            ),
+            child: Row(children: [
+              const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: Text("Periode: $periodeIzin",
+                      style: const TextStyle(
+                          fontSize: 13, color: Colors.black87))),
+            ]),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (izin.lampiranUrl != null && izin.lampiranUrl!.isNotEmpty)
-                const Padding(
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (izin.lampiranUrl != null && izin.lampiranUrl!.isNotEmpty)
+              const Padding(
                   padding: EdgeInsets.only(right: 8.0),
                   child: Icon(Icons.attachment,
-                      color: Colors.deepOrange, size: 20),
-                ),
-              statusBadge(izin.status, _statusColor(izin.status)),
-              const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down, color: Colors.grey),
-            ],
-          ),
+                      color: Colors.deepOrange, size: 20)),
+            statusBadge(izin.status, _statusColor(izin.status)),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, color: Colors.grey),
+          ]),
           children: [
             const Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDetailRow("Nama", izin.userName),
-                  _buildDetailRow("Email", izin.userEmail),
-                  _buildDetailRow("Kelas/Jabatan", izin.userClass),
-                  const SizedBox(height: 12),
-                  _buildDetailRow(
-                      "Tgl Pengajuan", _formatTanggal(izin.tanggalPengajuan)),
-                  _buildDetailRow("Status", izin.status,
-                      isStatus: true, statusColor: _statusColor(izin.status)),
-                  _buildDetailRow("Keterangan",
-                      izin.keterangan.isEmpty ? "-" : izin.keterangan),
-                  if (izin.lampiranUrl != null && izin.lampiranUrl!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 15.0),
-                      child: ElevatedButton.icon(
-                        onPressed: () => openPdf(izin.lampiranUrl!, context),
-                        icon: const Icon(Icons.file_download,
-                            size: 20, color: Colors.white),
-                        label: Text(
-                          "Lihat Lampiran (${izin.lampiranName})",
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w600),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1666A9),
-                          minimumSize: const Size(double.infinity, 40),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                  if (canDelete)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10.0),
-                      child: OutlinedButton.icon(
-                        onPressed: () => _showConfirmDeleteDialog(izin.id),
-                        icon: const Icon(Icons.delete_forever,
-                            color: Colors.red, size: 20),
-                        label: const Text("Hapus Pengajuan",
-                            style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.w600)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          minimumSize: const Size(double.infinity, 40),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow("Nama", izin.userName),
+                    _buildDetailRow("Email", izin.userEmail),
+                    _buildDetailRow("Kelas/Jabatan", izin.userClass),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                        "Tgl Pengajuan", _formatTanggal(izin.tanggalPengajuan)),
+                    _buildDetailRow("Status", izin.status,
+                        isStatus: true, statusColor: _statusColor(izin.status)),
+                    _buildDetailRow("Keterangan",
+                        izin.keterangan.isEmpty ? "-" : izin.keterangan),
+                    if (izin.lampiranUrl != null &&
+                        izin.lampiranUrl!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15.0),
+                        child: ElevatedButton.icon(
+                          onPressed: () => openPdf(izin.lampiranUrl!, context),
+                          icon: const Icon(Icons.file_download,
+                              size: 20, color: Colors.white),
+                          label: Text("Lihat Lampiran (${izin.lampiranName})",
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1666A9),
+                              minimumSize: const Size(double.infinity, 40),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8))),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                    if (canDelete)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10.0),
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showConfirmDeleteDialog(izin.id),
+                          icon: const Icon(Icons.delete_forever,
+                              color: Colors.red, size: 20),
+                          label: const Text("Hapus Pengajuan",
+                              style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red),
+                              minimumSize: const Size(double.infinity, 40),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8))),
+                        ),
+                      ),
+                  ]),
             ),
           ],
         ),
@@ -415,35 +415,23 @@ class _RekapanIzinPageState extends State<RekapanIzinPage> {
       {bool isStatus = false, Color statusColor = Colors.black}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
             width: 130,
-            child: Text(
-              "$label:",
-              style: const TextStyle(
-                  fontWeight: FontWeight.w500, color: Colors.black54),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: isStatus
-                ? Text(
-                    value,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
-                    ),
-                  )
-                : Text(
-                    value,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, color: Colors.black87),
-                  ),
-          ),
-        ],
-      ),
+            child: Text("$label:",
+                style: const TextStyle(
+                    fontWeight: FontWeight.w500, color: Colors.black54))),
+        const SizedBox(width: 8),
+        Expanded(
+          child: isStatus
+              ? Text(value,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: statusColor))
+              : Text(value,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: Colors.black87)),
+        ),
+      ]),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:languo/admin/rekapan/izin_rekapan_admin_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class VerifikasiIzinPage extends StatefulWidget {
   final String role; // menerima role dari halaman sebelumnya
@@ -15,28 +17,341 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  List<Map<String, String>> dataIzin = [
-    {
-      "nama": "ANDI SAPUTRA",
-      "tanggal": "11 November 2025",
-      "email": "andi@gmail.com",
-      "alasan": "Izin karena keperluan keluarga",
-      "jenis": "Izin Tidak Masuk",
-      "file": "surat_izin1.pdf",
-      "sisa": "4 hari"
-    },
-    {
-      "nama": "BUDI HARTONO",
-      "tanggal": "12 November 2025",
-      "email": "budi@gmail.com",
-      "alasan": "Izin pergi ke rumah sakit",
-      "jenis": "Izin Sakit",
-      "file": "surat_izin2.pdf",
-      "sisa": "2 hari"
-    },
-  ];
-
   String keyword = "";
+
+  final Map<int, String> bulan = {
+    1: "Jan",
+    2: "Feb",
+    3: "Mar",
+    4: "Apr",
+    5: "Mei",
+    6: "Jun",
+    7: "Jul",
+    8: "Agu",
+    9: "Sep",
+    10: "Okt",
+    11: "Nov",
+    12: "Des",
+  };
+
+  // ====================== WIDGET KARTU (collapsed / expanded) ======================
+  Widget izinTile(Map<String, dynamic> data, String id, int index) {
+    // safe timestamp handling
+    DateTime tglMulai;
+    DateTime tglSelesai;
+    try {
+      tglMulai = (data['tanggalMulai'] as Timestamp).toDate();
+    } catch (_) {
+      tglMulai = DateTime.now();
+    }
+    try {
+      tglSelesai = (data['tanggalSelesai'] as Timestamp).toDate();
+    } catch (_) {
+      tglSelesai = tglMulai;
+    }
+
+    final isExpanded = expandedIndex == index;
+
+    // Collapsed card (small)
+    if (!isExpanded) {
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            expandedIndex = index;
+          });
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // info left
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data['userName'] ?? "-",
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Periode Izin :",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: const Color.fromARGB(255, 3, 3, 3),
+                      ),
+                    ),
+                    Text(
+                      "${tglMulai.day} ${bulan[tglMulai.month]} ${tglMulai.year} s.d ${tglSelesai.day} ${bulan[tglSelesai.month]} ${tglSelesai.year}",
+                      style: const TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+
+              // badge and arrow
+              Column(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFA86F),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Proses",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    margin: EdgeInsets.only(right: 0),
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color.fromARGB(
+                          255, 225, 98, 19), // oranye muda seperti mockup
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: Color.fromARGB(255, 232, 227, 227),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Expanded card (detail)
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // header row with close button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                data['userName'] ?? "-",
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(
+                          255, 242, 156, 27), // ⬅ ubah jadi oranye
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Proses",
+                      style: TextStyle(
+                        color: Colors.white, // ⬅ teks putih
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      setState(() => expandedIndex = -1);
+                    },
+                    icon: const Icon(Icons.close),
+                    splashRadius: 20,
+                  )
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // details like mockup
+          Text("Periode Izin :", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            "${tglMulai.day} ${bulan[tglMulai.month]} ${tglMulai.year} s.d ${tglSelesai.day} ${bulan[tglSelesai.month]} ${tglSelesai.year}",
+          ),
+          const SizedBox(height: 8),
+
+          Text("Alamat Email :", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(data['email'] ?? "-"),
+          const SizedBox(height: 8),
+
+          Text("Alasan :", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(data['keterangan'] ?? "-"),
+          const SizedBox(height: 8),
+
+          Text("Sisa izin :", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text("${data['sisaIzin'] ?? '-'} hari"),
+          const SizedBox(height: 8),
+
+          Text("Tanggal :", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text("${tglMulai.day} ${bulan[tglMulai.month]} ${tglMulai.year}"),
+          const SizedBox(height: 16),
+
+          // file button (full width)
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final url = data['lampiranUrl'];
+                if (url == null || url.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("File tidak tersedia")),
+                  );
+                  return;
+                }
+
+                final uri = Uri.parse(url);
+                if (!await launchUrl(uri,
+                    mode: LaunchMode.externalApplication)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Gagal membuka file")),
+                  );
+                }
+              },
+              icon: const Icon(
+                Icons.insert_drive_file,
+                color: Colors.white, // ⬅ ICON PUTIH
+                size: 30,
+              ),
+              label: const Text(
+                "File",
+                style: TextStyle(
+                  color: Colors.white, // ⬅ TEKS PUTIH
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE4572E), // ⬅ ORANYE
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // buttons row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end, // taruh di kanan
+            children: [
+              // BUTTON TOLAK
+              ElevatedButton(
+                onPressed: () {
+                  showRejectConfirm(context, id);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      const Color.fromARGB(255, 238, 64, 45), // warna oranye
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 3,
+                ),
+                child: const Text(
+                  "TOLAK",
+                  style: TextStyle(color: Colors.white), // teks putih
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // BUTTON TERIMA
+              ElevatedButton(
+                onPressed: () async {
+                  await FirebaseFirestore.instance
+                      .collection('pengajuan_izin')
+                      .doc(id)
+                      .update({"status": "Disetujui"});
+
+                  showSuccessPopup(context);
+                  setState(() => expandedIndex = -1);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF36546C), // biru gelap
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 3,
+                ),
+                child: const Text(
+                  "TERIMA",
+                  style: TextStyle(color: Colors.white), // teks putih
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Stream<QuerySnapshot> getPengajuanIzin() {
+    return FirebaseFirestore.instance
+        .collection('pengajuan_izin')
+        .where('status', isEqualTo: 'Diajukan')
+        .snapshots();
+  }
 
   // ====================== POPUP TERIMA ======================
   void showSuccessPopup(BuildContext context) {
@@ -89,8 +404,8 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
     );
   }
 
-  // ====================== POPUP KONFIRM TOLAK ======================
-  void showRejectConfirm(BuildContext context) {
+  // ====================== POPUP KONFIRM TOLAK (update firestore ketika YA) ======================
+  void showRejectConfirm(BuildContext context, String id) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -132,14 +447,28 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: InkWell(
-                        onTap: () {
+                        onTap: () async {
+                          // perform update to firestore
                           Navigator.pop(context);
-                          showRejectSuccess(context);
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('pengajuan_izin')
+                                .doc(id)
+                                .update({"status": "Ditolak"});
+                            showRejectSuccess(context);
+                          } catch (e) {
+                            // show error
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content: Text('Gagal menolak: $e')),
+                            );
+                          }
+                          // close expanded view
+                          setState(() => expandedIndex = -1);
                         },
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
-                            color: Color(0xFF36546C),
+                            color: const Color(0xFF36546C),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
@@ -221,7 +550,56 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: IzinList()),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: selectedTab == 0
+                  ? getPengajuanIzin() // Pengajuan
+                  : FirebaseFirestore.instance
+                      .collection("pengajuan_izin")
+                      .where("status", isNotEqualTo: "Diajukan") // Rekapan
+                      .orderBy("createdAt", descending: true)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text("Tidak ada pengajuan izin"),
+                  );
+                }
+
+                final docs = snapshot.data!.docs;
+
+                // apply search filter (on userName)
+                final filtered = docs.where((doc) {
+                  if (keyword.isEmpty) return true;
+                  final d = doc.data() as Map<String, dynamic>;
+                  final name = (d['userName'] ?? '').toString().toLowerCase();
+                  final email = (d['email'] ?? '').toString().toLowerCase();
+                  final perihal = (d['perihal'] ?? '').toString().toLowerCase();
+                  return name.contains(keyword) ||
+                      email.contains(keyword) ||
+                      perihal.contains(keyword);
+                }).toList();
+
+                if (filtered.isEmpty) {
+                  return const Center(child: Text("Tidak ditemukan"));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final doc = filtered[index];
+                    final d = doc.data() as Map<String, dynamic>;
+                    return izinTile(d, doc.id, index);
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -382,172 +760,6 @@ class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
             const Icon(Icons.search, color: Colors.white),
           ],
         ),
-      ),
-    );
-  }
-
-  // LIST IZIN
-  Widget IzinList() {
-    var filtered = dataIzin
-        .where((e) => e["nama"]!.toLowerCase().contains(keyword))
-        .toList();
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 10),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        return izinCard(filtered[index], index);
-      },
-    );
-  }
-
-  Widget izinCard(Map<String, String> item, int index) {
-    bool isExpanded = expandedIndex == index;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(207, 237, 236, 236),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.calendar_month, color: Color(0xFFDA3B26)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item["nama"]!,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    const Text("Periode Izin :",
-                        style: TextStyle(color: Colors.black54)),
-                    Text(
-                      "${item["tanggal"]} s.d ${item["tanggal"]}",
-                      style: const TextStyle(
-                          color: Color(0xFFDA3B26),
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFA954),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text("Proses",
-                        style: TextStyle(color: Colors.white)),
-                  ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        expandedIndex = isExpanded ? -1 : index;
-                      });
-                    },
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDA3B26),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        isExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.arrow_forward,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (isExpanded) ...[
-            const SizedBox(height: 15),
-            detailRow("Alamat Email :", item["email"]!),
-            detailRow("Alasan :", item["alasan"]!),
-            detailRow("Sisa cuti :", item["sisa"]!),
-            detailRow("Tanggal :", item["tanggal"]!),
-            const SizedBox(height: 15),
-            GestureDetector(
-              onTap: () {},
-              child: Container(
-                height: 45,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDA3B26),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.picture_as_pdf, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text("File", style: TextStyle(color: Colors.white)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                GestureDetector(
-                  onTap: () => showRejectConfirm(context),
-                  child: buildActionButton("TOLAK", Colors.red),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => showSuccessPopup(context),
-                  child: buildActionButton("TERIMA", const Color(0xFF36546C)),
-                ),
-              ],
-            )
-          ]
-        ],
-      ),
-    );
-  }
-
-  Widget detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value, style: const TextStyle(fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Widget buildActionButton(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style:
-            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }
