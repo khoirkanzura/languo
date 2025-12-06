@@ -340,9 +340,9 @@ class _VerifikasiSakitPageState extends State<VerifikasiSakitPage> {
           if (index == 1) {
             String role = widget.role;
 
-            // ⬇ jika role tidak ditemukan, default ke murid
-            if (role != "Admin" && role != "Karyawan Dosen" && role != "Murid") {
-              role = "Murid";
+            // ⬇ jika role tidak ditemukan, default ke karyawan
+            if (role != "Karyawan" && role != "Dosen"){
+              role = "Karyawan";
             }
 
             Navigator.push(
