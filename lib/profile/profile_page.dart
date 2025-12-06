@@ -7,6 +7,7 @@ import '../../screen/qr_scanner_screen.dart';
 import '../users/home_page.dart';
 import '../admin/home_page.dart';
 import 'notifikasi_user_page.dart';
+import 'notifikasi_admin_page.dart';
 import 'faq_user_page.dart';
 import 'faq_admin_page.dart';
 import 'logout_dialog.dart'; // PASTIKAN INI ADA!
@@ -197,32 +198,27 @@ class ProfilePage extends StatelessWidget {
                     _menuItem(
                       Icons.notifications_outlined,
                       "Notifikasi",
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const NotifikasiPage()),
-                        );
-                      },
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => user.userRole == "Admin"
+                              ? const NotifikasiAdminPage()
+                              : const NotifikasiPage(),
+                        ),
+                      ),
                     ),
 
                     _menuItem(
                       Icons.help_outline,
                       "FAQ",
-                      () {
-                        if (user.userRole == "Admin") {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const FaqAdminPage()),
-                          );
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const FaqPage()),
-                          );
-                        }
-                      },
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => user.userRole == "Admin"
+                              ? const FaqAdminPage()
+                              : const FaqPage(),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 30),

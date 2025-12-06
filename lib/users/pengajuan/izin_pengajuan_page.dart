@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/izin_service.dart';
 import '../rekapan/izin_rekapan_user_page.dart';
 
@@ -84,10 +85,6 @@ class _PengajuanIzinPageState extends State<PengajuanIzinPage> {
     }
     if (lampiranBytes == null || lampiranName == null) {
       _showMessage("Lampiran belum diupload");
-      return false;
-    }
-    if (keteranganController.text.isEmpty) {
-      _showMessage("Keterangan masih kosong");
       return false;
     }
     return true;
