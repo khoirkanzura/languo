@@ -12,6 +12,8 @@ import 'rekapan/izin_rekapan_admin_page.dart';
 import 'rekapan/sakit_rekapan_admin_page.dart';
 import 'rekapan/kehadiran_rekapan_admin_page.dart';
 import 'tambah_jadwal.dart';
+import 'package:intl/intl.dart';
+import 'package:languo/admin/user_management_page.dart';
 
 class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});
@@ -382,6 +384,9 @@ class _HomeAdminState extends State<HomeAdmin> {
 
   // ===================== Schedule Card =====================
   Widget _buildScheduleCard() {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEE, d MMM yyyy', 'id_ID').format(now);
+
     return Transform.translate(
       offset: const Offset(0, -30),
       child: Padding(
@@ -404,16 +409,7 @@ class _HomeAdminState extends State<HomeAdmin> {
               Row(
                 children: [
                   Text(
-                    "Kehadiran",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Spacer(),
-                  Text(
-                    "Sen, 1 Nov 2025",
+                    formattedDate,
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,
@@ -423,13 +419,40 @@ class _HomeAdminState extends State<HomeAdmin> {
               ),
               const SizedBox(height: 16),
               Text(
-                "08:00 - 18:00",
+                "07:00 - 17:00",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 28,
                   color: Colors.black,
                 ),
               ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const UserManagementPage()),
+                  );
+                },
+                icon: const Icon(Icons.add, size: 20), // ikon + di kiri
+                label: const Text(
+                  "Manajemen User",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE75636),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  minimumSize: const Size(double.infinity, 48),
+                  elevation: 0,
+                ),
+              )
             ],
           ),
         ),
