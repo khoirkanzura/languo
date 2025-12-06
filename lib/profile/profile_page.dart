@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import '../../screen/edit_profile.dart';
-import '../../routes/routes_manager.dart';
 import '../../screen/qr_scanner_screen.dart';
-import '../users/karyawan/home_page.dart';
-import '../users/dosen/home_page.dart';
+import '../users/home_page.dart';
 import '../admin/home_page.dart';
-import 'notifikasi_page.dart';
-import 'pengaturan_page.dart';
-import 'faq_page.dart';
+import 'notifikasi_user_page.dart';
+import 'notifikasi_admin_page.dart';
+import 'faq_user_page.dart';
+import 'faq_admin_page.dart';
 import 'logout_dialog.dart'; // PASTIKAN INI ADA!
 
 class ProfilePage extends StatelessWidget {
@@ -199,40 +198,31 @@ class ProfilePage extends StatelessWidget {
                     _menuItem(
                       Icons.notifications_outlined,
                       "Notifikasi",
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const NotifikasiPage()),
-                        );
-                      },
-                    ),
-
-                    _menuItem(
-                      Icons.settings_outlined,
-                      "Pengaturan",
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const PengaturanPage()),
-                        );
-                      },
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => user.userRole == "Admin"
+                              ? const NotifikasiAdminPage()
+                              : const NotifikasiPage(),
+                        ),
+                      ),
                     ),
 
                     _menuItem(
                       Icons.help_outline,
                       "FAQ",
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const FaqPage()),
-                        );
-                      },
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => user.userRole == "Admin"
+                              ? const FaqAdminPage()
+                              : const FaqPage(),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 30),
-                    
+
                     // ========================================
                     // TOMBOL LOG OUT - GUNAKAN LogoutDialog.show()
                     // ========================================
@@ -321,14 +311,10 @@ class ProfilePage extends StatelessWidget {
 
   Widget getHomeByRole(String role) {
     switch (role) {
-      case "Karyawan":
-        return const HomeKaryawan();
       case "Admin":
         return const HomeAdmin();
-      case "Dosen":
-        return const HomeDosen();
       default:
-        return const HomeKaryawan();
+        return const HomePageUser();
     }
   }
 

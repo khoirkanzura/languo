@@ -1,37 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/sakit_page.dart';
+import 'package:languo/admin/verifikasi/cuti_verifikasi_admin_page.dart';
 
-class RekapanAdminSakitPage extends StatefulWidget {
+class RekapanAdminCutiPage extends StatefulWidget {
   final String role;
 
-  const RekapanAdminSakitPage({super.key, required this.role});
+  const RekapanAdminCutiPage({super.key, required this.role});
 
   @override
-  State<RekapanAdminSakitPage> createState() => _RekapanAdminSakitPageState();
+  State<RekapanAdminCutiPage> createState() => _RekapanAdminCutiPageState();
 }
 
-class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
+class _RekapanAdminCutiPageState extends State<RekapanAdminCutiPage> {
   int selectedTab = 1; // langsung ke REKAPAN
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
   // DATA HANYA MENAMPILKAN YANG DITERIMA / DITOLAK
-  List<Map<String, String>> dataSakit = [
+  List<Map<String, String>> dataCuti = [
     {
-      "nama": "Kartika Tri Juliana",
-      "periode": "30 Nov 2025 s.d 1 Des 2025",
-      "email": "kartika@gmail.com",
-      "tanggal": "11 November 2025",
-      "file": "surat_sakit.pdf",
-      "status": "Diterima",
-    },
-    {
-      "nama": "Elizabeth",
-      "periode": "30 Nov 2025 s.d 1 Des 2025",
-      "email": "eliza@gmail.com",
-      "tanggal": "12 November 2025",
-      "file": "surat_sakit.pdf",
-      "status": "Ditolak",
+      "nama": "GERLY VAEYUNGFAN",
+      "mulai": "12 November 2025",
+      "selesai": "15 November 2025",
+      "email": "gerlyvaeyungfan@gmail.com",
+      "alasan": "Mengambil Cuti Tahunan",
+      "file": "surat_Cuti2.pdf",
+      "sisa": "3 hari",
+      "status": "Disetujui",
     },
   ];
 
@@ -150,7 +144,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
               ),
               const SizedBox(width: 10),
               Text(
-                "Sakit <  ${widget.role}",
+                "Cuti  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -209,7 +203,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
     );
   }
 
-// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/sakit_page)
+// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/cuti_page)
   Widget _tab(String title, int index) {
     return Expanded(
       child: GestureDetector(
@@ -219,7 +213,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SakitPage(role: widget.role),
+                builder: (_) => VerifikasiCutiPage(role: widget.role),
               ),
             );
           } else {
@@ -275,7 +269,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
 
   // LIST REKAPAN
   Widget RekapanList() {
-    var filtered = dataSakit
+    var filtered = dataCuti
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
 
@@ -283,16 +277,17 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return SakitCard(filtered[index], index);
+        return CutiCard(filtered[index], index);
       },
     );
   }
 
   // CARD UTAMA
-  Widget SakitCard(Map<String, String> item, int index) {
+  Widget CutiCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Diterima" ? Colors.green : Colors.red;
+    Color badgeColor =
+        item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -321,12 +316,24 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 6),
-                    const Text("Periode Sakit :",
+                    const Text("Periode Cuti :",
                         style: TextStyle(color: Colors.black54)),
-                    Text(item["periode"]!,
+                    RichText(
+                      text: TextSpan(
                         style: const TextStyle(
-                            color: Color(0xFFDA3B26),
-                            fontWeight: FontWeight.bold)),
+                          color: Color(0xFFDA3B26),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        children: [
+                          TextSpan(text: item["mulai"] ?? "-"),
+                          if (item["selesai"] != null) ...[
+                            const TextSpan(text: "  s.d  "),
+                            TextSpan(text: item["selesai"]),
+                          ]
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -383,7 +390,13 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
             const SizedBox(height: 15),
 
             detailRow("Alamat Email :", item["email"]!),
-            detailRow("Tanggal :", item["tanggal"]!),
+            detailRow("Alasan :", item["alasan"]!),
+            detailRow("Sisa cuti :", item["sisa"]!),
+            detailRow(
+              "Tanggal :",
+              item["mulai"]! +
+                  (item["selesai"] != null ? " s.d ${item["selesai"]}" : ""),
+            ),
 
             const SizedBox(height: 15),
 

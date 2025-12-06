@@ -1,29 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../models/user_model.dart';
-import '../../profile/profile_page.dart';
-import '../../screen/qr_scanner_screen.dart';
-import '../../screen/employee_detail_screen.dart';
-import 'package:languo/users/rekapan/kehadiran_page.dart';
-import 'package:languo/users/pengajuan/cuti_page.dart';
-import 'package:languo/users/pengajuan/izin_page.dart';
-import 'package:languo/users/pengajuan/sakit_page.dart';
-import 'package:languo/users/rekapan/izin_page.dart';
-import '../dosen/home_page.dart';
-import '../../admin/home_page.dart';
+import '../models/user_model.dart';
+import '../profile/profile_page.dart';
+import '../screen/qr_scanner_screen.dart';
+import '../screen/maps.dart';
+import 'package:languo/users/rekapan/kehadiran_rekapan_user_page.dart';
+import 'package:languo/users/pengajuan/cuti_pengajuan_page.dart';
+import 'package:languo/users/pengajuan/izin_pengajuan_page.dart';
+import 'package:languo/users/pengajuan/sakit_pengajuan_page.dart';
+import 'package:languo/users/rekapan/izin_rekapan_user_page.dart';
+import 'package:languo/users/rekapan/sakit_rekapan_user_page.dart';
+import 'package:languo/users/rekapan/cuti_rekapan_user_page.dart';
+import '../admin/home_page.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-class HomeKaryawan extends StatefulWidget {
-  const HomeKaryawan({super.key});
+class HomePageUser extends StatefulWidget {
+  const HomePageUser({super.key});
 
   @override
-  State<HomeKaryawan> createState() => _HomeKaryawanState();
+  State<HomePageUser> createState() => _HomePageUserState();
 }
 
-class _HomeKaryawanState extends State<HomeKaryawan> {
+class _HomePageUserState extends State<HomePageUser> {
   String? _lastScannedData;
+  bool _localeReady = false;
 
-  Future<void> checkUserRole() async {
+  @override
+  void initState() {
+    super.initState();
+
+    initializeDateFormatting('id_ID', null).then((_) {
+      if (mounted) {
+        setState(() => _localeReady = true);
+      }
+    });
+
+    // Cek jika Admin → redirect ke HomeAdmin
+    _redirectIfAdmin();
+  }
+
+  Future<void> _redirectIfAdmin() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -34,22 +52,15 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
 
     if (!doc.exists) return;
 
-    final role = doc.data()?['user_role']; // Ambil role
+    final role = doc['user_role'];
 
     if (!mounted) return;
 
-    if (role != "Karyawan") {
-      if (role == "Dosen") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeDosen()),
-        );
-      } else if (role == "Admin") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeAdmin()),
-        );
-      }
+    if (role == "Admin") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeAdmin()),
+      );
     }
   }
 
@@ -63,7 +74,6 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
         .get();
 
     if (!doc.exists) return null;
-
     return UserModel.fromFirestore(doc);
   }
 
@@ -375,55 +385,24 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // HADIR
         _menuButton(Icons.person, "Hadir", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const KehadiranPage()),
           );
         }),
-
-        // ========== IZIN (FIXED) ==========
         _menuButton(Icons.description, "Izin", () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const PengajuanIzinPage()),
           );
         }),
-
-        // SAKIT
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
-            );
-          },
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF36546C),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.medical_services,
-                    color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 8),
-              const Text("Sakit", style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-
-        // CUTI
+        _menuButton(Icons.medical_services, "Sakit", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PengajuanSakitPage()),
+          );
+        }),
         _menuButton(Icons.schedule, "Cuti", () {
           Navigator.push(
             context,
@@ -466,6 +445,16 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
 
   // ===================== Schedule Card =====================
   Widget _buildScheduleCard() {
+    if (!_localeReady) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEE, d MMM yyyy', 'id_ID').format(now);
+
     return Transform.translate(
       offset: const Offset(0, -30),
       child: Padding(
@@ -488,16 +477,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
               Row(
                 children: [
                   Text(
-                    "Kelas Mandarin",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Spacer(),
-                  Text(
-                    "Sen, 1 Nov 2025",
+                    formattedDate,
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,
@@ -507,7 +487,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
               ),
               const SizedBox(height: 16),
               Text(
-                "08:00 - 18:00",
+                "07:00 - 17:00",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 28,
@@ -519,9 +499,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const EmployeeDetailScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const MapsPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -534,7 +512,7 @@ class _HomeKaryawanState extends State<HomeKaryawan> {
                   elevation: 0,
                 ),
                 child: Text(
-                  "Detail",
+                  "Cek Lokasi Anda",
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,

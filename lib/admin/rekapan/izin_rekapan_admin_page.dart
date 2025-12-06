@@ -1,110 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/cuti_page.dart';
+import 'package:languo/admin/verifikasi/izin_verifikasi_admin_page.dart';
 
-class CutiPage extends StatefulWidget {
-  final String role; // menerima role dari halaman sebelumnya
+class RekapanAdminIzinPage extends StatefulWidget {
+  final String role;
 
-  const CutiPage({super.key, required this.role});
+  const RekapanAdminIzinPage({super.key, required this.role});
 
   @override
-  State<CutiPage> createState() => _CutiPageState();
+  State<RekapanAdminIzinPage> createState() => _RekapanAdminIzinPageState();
 }
 
-class _CutiPageState extends State<CutiPage> {
-  int selectedTab = 0;
+class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
+  int selectedTab = 1; // langsung ke REKAPAN
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
+  // DATA HANYA MENAMPILKAN YANG DITERIMA / DITOLAK
   List<Map<String, String>> dataIzin = [
     {
-      "nama": "GERLY VAEYUNGFAN",
-      "tanggal": "11 November 2025",
-      "email": "gerlyvaeyungfan@gmail.com",
-      "alasan": "Mengambil Cuti Tahunan",
+      "nama": "BUDI HARTONO",
+      "mulai": "12 November 2025",
+      "selesai": "15 November 2025",
+      "email": "budi@gmail.com",
+      "alasan": "Izin pergi ke rumah sakit",
+      "jenis": "Izin sakit",
       "file": "surat_izin2.pdf",
-      "sisa": "3 hari",
+      "sisa": "2 hari",
+      "status": "Disetujui",
     },
     {
       "nama": "BUDI HARTONO",
-      "tanggal": "12 November 2025",
+      "mulai": "10 November 2025",
+      "selesai": "13 November 2025",
       "email": "budi@gmail.com",
       "alasan": "Izin pergi ke rumah sakit",
       "jenis": "Izin Sakit",
       "file": "surat_izin2.pdf",
-      "sisa": "2 hari"
+      "sisa": "2 hari",
+      "status": "Ditolak",
     },
   ];
 
   String keyword = "";
 
-  // ====================== POPUP TERIMA ======================
-  void showSuccessPopup(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(25),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 45),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Pengajuan telah diterima",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                    child: Text("OK", style: TextStyle(color: Colors.white)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ====================== POPUP KONFIRM TOLAK ======================
-  void showRejectConfirm(BuildContext context) {
+  // POPUP HAPUS
+  void showDeleteConfirm(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Padding(
             padding: const EdgeInsets.all(25),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Apakah Anda yakin ingin menolak?",
+                  "Hapus data ini?",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
@@ -117,11 +71,11 @@ class _CutiPageState extends State<CutiPage> {
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
-                            color: Colors.red,
+                            color: Colors.grey,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Tidak",
+                          child: const Text("Batal",
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
@@ -133,16 +87,15 @@ class _CutiPageState extends State<CutiPage> {
                       child: InkWell(
                         onTap: () {
                           Navigator.pop(context);
-                          showRejectSuccess(context);
                         },
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
-                            color: Color(0xFF36546C),
+                            color: Colors.red,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Ya",
+                          child: const Text("Hapus",
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
@@ -159,58 +112,10 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // ====================== POPUP TOLAK SUKSES ======================
-  void showRejectSuccess(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(25),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 45),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Pengajuan telah ditolak",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                    child: Text("OK", style: TextStyle(color: Colors.white)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  // ============================================================
+  // UI
+  // ============================================================
 
-  // ====================== UI ======================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,13 +125,13 @@ class _CutiPageState extends State<CutiPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: CutiList()),
+          Expanded(child: RekapanList()),
         ],
       ),
     );
   }
 
-  // HEADER (DINAMIC ROLE)
+  // HEADER
   Widget header() {
     return Container(
       height: 160,
@@ -243,19 +148,15 @@ class _CutiPageState extends State<CutiPage> {
         child: Align(
           alignment: Alignment.centerLeft,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 26,
-                ),
+                child:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 10),
               Text(
-                "Cuti  <  ${widget.role}",
+                "Izin  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -269,7 +170,7 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // TAB BAR
+  // TAB
   Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
@@ -302,8 +203,8 @@ class _CutiPageState extends State<CutiPage> {
                 ),
                 Row(
                   children: [
-                    _tabButton("Pengajuan", 0),
-                    _tabButton("Rekapan", 1),
+                    _tab("Pengajuan", 0),
+                    _tab("Rekapan", 1),
                   ],
                 )
               ],
@@ -314,37 +215,31 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  Widget _tabButton(String title, int index) {
+// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/sakit_page)
+  Widget _tab(String title, int index) {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          if (index == 1) {
-            String role = widget.role; // role dari halaman sebelumnya
-
-            // ⬇ jika role tidak ditemukan, default ke murid
-            if (role != "Admin" && role != "Karyawan" && role != "Murid") {
-              role = "Murid";
-            }
-
+          if (index == 0) {
+            // PENGAJUAN → menuju halaman verifikasi
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RekapanAdminCutiPage(role: role),
+                builder: (_) => VerifikasiIzinPage(role: widget.role),
               ),
             );
-            return;
+          } else {
+            // REKAPAN (tetap di halaman ini)
+            setState(() => selectedTab = index);
           }
-
-          // Untuk tab pengajuan
-          setState(() => selectedTab = index);
         },
         child: Center(
           child: Text(
             title,
             style: TextStyle(
               color: selectedTab == index ? Colors.white : Colors.grey.shade700,
-              fontWeight: FontWeight.w600,
               fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -369,8 +264,7 @@ class _CutiPageState extends State<CutiPage> {
               child: TextField(
                 controller: searchController,
                 style: const TextStyle(color: Colors.white),
-                onChanged: (value) =>
-                    setState(() => keyword = value.toLowerCase()),
+                onChanged: (v) => setState(() => keyword = v.toLowerCase()),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   hintText: "Cari Pengguna....",
@@ -385,8 +279,8 @@ class _CutiPageState extends State<CutiPage> {
     );
   }
 
-  // LIST IZIN
-  Widget CutiList() {
+  // LIST REKAPAN
+  Widget RekapanList() {
     var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
@@ -395,13 +289,16 @@ class _CutiPageState extends State<CutiPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return izinCard(filtered[index], index);
+        return IzinCard(filtered[index], index);
       },
     );
   }
 
-  Widget izinCard(Map<String, String> item, int index) {
+  // CARD UTAMA
+  Widget IzinCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
+
+    Color badgeColor = item["status"] == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -414,42 +311,65 @@ class _CutiPageState extends State<CutiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // HEADER CARD
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.calendar_month, color: Color(0xFFDA3B26)),
+              const Icon(Icons.calendar_today, color: Colors.red),
               const SizedBox(width: 10),
+
+              // INFORMASI UTAMA
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(item["nama"]!,
                         style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold)),
+                            fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 6),
                     const Text("Periode Izin :",
                         style: TextStyle(color: Colors.black54)),
-                    Text(
-                      "${item["tanggal"]} s.d ${item["tanggal"]}",
-                      style: const TextStyle(
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
                           color: Color(0xFFDA3B26),
-                          fontWeight: FontWeight.bold),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        children: [
+                          TextSpan(text: item["mulai"] ?? "-"),
+                          if (item["selesai"] != null) ...[
+                            const TextSpan(text: "  s.d  "),
+                            TextSpan(text: item["selesai"]),
+                          ]
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
+
+              // KOLOM KANAN (STATUS + PANAH)
               Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  // STATUS
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFA954),
+                      color: badgeColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text("Proses",
-                        style: TextStyle(color: Colors.white)),
+                    child: Text(
+                      item["status"]!,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 8),
+
+                  // PANAH
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -457,8 +377,8 @@ class _CutiPageState extends State<CutiPage> {
                       });
                     },
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: const Color(0xFFDA3B26),
                         borderRadius: BorderRadius.circular(10),
@@ -475,47 +395,64 @@ class _CutiPageState extends State<CutiPage> {
               ),
             ],
           ),
+
+          // DETAIL CARD
           if (isExpanded) ...[
             const SizedBox(height: 15),
+
             detailRow("Alamat Email :", item["email"]!),
             detailRow("Alasan :", item["alasan"]!),
             detailRow("Sisa cuti :", item["sisa"]!),
-            detailRow("Tanggal :", item["tanggal"]!),
+            detailRow(
+              "Tanggal :",
+              item["mulai"]! +
+                  (item["selesai"] != null ? " s.d ${item["selesai"]}" : ""),
+            ),
+
             const SizedBox(height: 15),
-            GestureDetector(
-              onTap: () {},
-              child: Container(
-                height: 45,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDA3B26),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.picture_as_pdf, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text("File", style: TextStyle(color: Colors.white)),
-                  ],
+
+            // FILE BUTTON
+            Container(
+              height: 45,
+              decoration: BoxDecoration(
+                color: Colors.deepOrange,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.picture_as_pdf, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text("File", style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            // HAPUS POSISI KANAN
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => showDeleteConfirm(context),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    "Hapus",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                GestureDetector(
-                  onTap: () => showRejectConfirm(context),
-                  child: buildActionButton("TOLAK", Colors.red),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => showSuccessPopup(context),
-                  child: buildActionButton("TERIMA", const Color(0xFF36546C)),
-                ),
-              ],
-            )
-          ]
+          ],
         ],
       ),
     );
@@ -530,23 +467,9 @@ class _CutiPageState extends State<CutiPage> {
           Text(label,
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value, style: const TextStyle(fontSize: 13)),
+          Text(value,
+              style: const TextStyle(fontSize: 13, color: Colors.black87)),
         ],
-      ),
-    );
-  }
-
-  Widget buildActionButton(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style:
-            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }

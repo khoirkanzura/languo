@@ -40,8 +40,8 @@ class _BuatQRPageState extends State<BuatQRPage> {
   bool _isWithinTimeRange() {
     final now = DateTime.now();
 
-    final start = DateTime(now.year, now.month, now.day, 7, 0);
-    final end = DateTime(now.year, now.month, now.day, 17, 0);
+    final start = DateTime(now.year, now.month, now.day, 7, 0); // 07.00
+    final end = DateTime(now.year, now.month, now.day, 17, 0); // 17.00
 
     return now.isAfter(start) && now.isBefore(end);
   }
@@ -50,17 +50,14 @@ class _BuatQRPageState extends State<BuatQRPage> {
   String _detectSession() {
     final now = DateTime.now();
 
-    // Check-in: sebelum 08.00
     final checkInEnd = DateTime(now.year, now.month, now.day, 8, 0);
-
-    // Check-out: 09.00 - 17.00
     final checkOutStart = DateTime(now.year, now.month, now.day, 9, 0);
     final checkOutEnd = DateTime(now.year, now.month, now.day, 17, 0);
 
     if (now.isBefore(checkInEnd)) {
-      return "check_in"; // 07.00 - 08.00
+      return "check_in";
     } else if (now.isAfter(checkOutStart) && now.isBefore(checkOutEnd)) {
-      return "check_out"; // 09.00 - 17.00
+      return "check_out";
     } else {
       return "invalid_checkout";
     }
@@ -143,7 +140,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
     final session = _detectSession();
 
     if (!_isWithinTimeRange()) {
-      return _errorScreen("Di luar jam absensi (07:00 - 17:00)");
+      return _errorScreen("Di luar jam absensi (07.00 - 17.00)");
     }
 
     if (session == "invalid_checkout") {
@@ -188,15 +185,12 @@ class _BuatQRPageState extends State<BuatQRPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-
                         Text(
                           "Tanggal : ${DateFormat('dd-MM-yyyy').format(DateTime.now())}",
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 25),
-
-                        // QR CODE
                         Center(
                           child: qrData.isEmpty
                               ? const CircularProgressIndicator()
@@ -205,9 +199,7 @@ class _BuatQRPageState extends State<BuatQRPage> {
                                   size: qrSize,
                                 ),
                         ),
-
                         const SizedBox(height: 30),
-
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 30, vertical: 10),
@@ -223,7 +215,6 @@ class _BuatQRPageState extends State<BuatQRPage> {
                                 color: Colors.white),
                           ),
                         ),
-
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -238,14 +229,61 @@ class _BuatQRPageState extends State<BuatQRPage> {
   }
 
   // ======================================================
+  // ERROR SCREEN SESUAI GAMBAR
   Widget _errorScreen(String text) {
     return Scaffold(
-      body: Center(
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.red, fontSize: 18),
-        ),
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: Center(
+              child: Container(
+                width: 300,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE5E5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.red, width: 2),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.red, width: 2),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "!",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      "SESI ABSENSI SUDAH\nMELEWATI WAKTU\n07.00 – 17.00 WIB",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,64 +1,111 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/verifikasi/izin_page.dart';
+import 'package:languo/admin/rekapan/izin_rekapan_admin_page.dart';
 
-class RekapanAdminIzinPage extends StatefulWidget {
-  final String role;
+class VerifikasiIzinPage extends StatefulWidget {
+  final String role; // menerima role dari halaman sebelumnya
 
-  const RekapanAdminIzinPage({super.key, required this.role});
+  const VerifikasiIzinPage({super.key, required this.role});
 
   @override
-  State<RekapanAdminIzinPage> createState() => _RekapanAdminIzinPageState();
+  State<VerifikasiIzinPage> createState() => _VerifikasiIzinPageState();
 }
 
-class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
-  int selectedTab = 1; // langsung ke REKAPAN
+class _VerifikasiIzinPageState extends State<VerifikasiIzinPage> {
+  int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  // DATA HANYA MENAMPILKAN YANG DITERIMA / DITOLAK
   List<Map<String, String>> dataIzin = [
     {
-      "nama": "BUDI HARTONO",
-      "mulai": "12 November 2025",
-      "selesai": "15 November 2025",
-      "email": "budi@gmail.com",
-      "alasan": "Izin pergi ke rumah sakit",
-      "jenis": "Izin sakit",
-      "file": "surat_izin2.pdf",
-      "sisa": "2 hari",
-      "status": "Diterima",
+      "nama": "ANDI SAPUTRA",
+      "tanggal": "11 November 2025",
+      "email": "andi@gmail.com",
+      "alasan": "Izin karena keperluan keluarga",
+      "jenis": "Izin Tidak Masuk",
+      "file": "surat_izin1.pdf",
+      "sisa": "4 hari"
     },
     {
       "nama": "BUDI HARTONO",
-      "mulai": "10 November 2025",
-      "selesai": "13 November 2025",
+      "tanggal": "12 November 2025",
       "email": "budi@gmail.com",
       "alasan": "Izin pergi ke rumah sakit",
       "jenis": "Izin Sakit",
       "file": "surat_izin2.pdf",
-      "sisa": "2 hari",
-      "status": "Ditolak",
+      "sisa": "2 hari"
     },
   ];
 
   String keyword = "";
 
-  // POPUP HAPUS
-  void showDeleteConfirm(BuildContext context) {
+  // ====================== POPUP TERIMA ======================
+  void showSuccessPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(25),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 45),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Pengajuan telah disetujui",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    child: Text("OK", style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ====================== POPUP KONFIRM TOLAK ======================
+  void showRejectConfirm(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(25),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Hapus data ini?",
+                  "Apakah Anda yakin ingin menolak?",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
@@ -71,11 +118,11 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
-                            color: Colors.grey,
+                            color: Colors.red,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Batal",
+                          child: const Text("Tidak",
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
@@ -87,15 +134,16 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
                       child: InkWell(
                         onTap: () {
                           Navigator.pop(context);
+                          showRejectSuccess(context);
                         },
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
-                            color: Colors.red,
+                            color: Color(0xFF36546C),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
-                          child: const Text("Hapus",
+                          child: const Text("Ya",
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
@@ -112,10 +160,58 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-  // ============================================================
-  // UI
-  // ============================================================
+  // ====================== POPUP TOLAK SUKSES ======================
+  void showRejectSuccess(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(25),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 45),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Pengajuan telah ditolak",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    child: Text("OK", style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
+  // ====================== UI ======================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,13 +221,13 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: RekapanList()),
+          Expanded(child: IzinList()),
         ],
       ),
     );
   }
 
-  // HEADER
+  // HEADER (DINAMIC ROLE)
   Widget header() {
     return Container(
       height: 160,
@@ -148,15 +244,19 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
         child: Align(
           alignment: Alignment.centerLeft,
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
                 onTap: () => Navigator.of(context).pop(),
-                child:
-                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
-                "Izin <  ${widget.role}",
+                "Izin  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -170,7 +270,7 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-  // TAB
+  // TAB BAR
   Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
@@ -203,8 +303,8 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
                 ),
                 Row(
                   children: [
-                    _tab("Pengajuan", 0),
-                    _tab("Rekapan", 1),
+                    _tabButton("Pengajuan", 0),
+                    _tabButton("Rekapan", 1),
                   ],
                 )
               ],
@@ -215,31 +315,37 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/sakit_page)
-  Widget _tab(String title, int index) {
+  Widget _tabButton(String title, int index) {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          if (index == 0) {
-            // PENGAJUAN → menuju halaman verifikasi
+          if (index == 1) {
+            String role = widget.role; // role dari halaman sebelumnya
+
+            // ⬇ jika role tidak ditemukan, default ke murid
+            if (role != "Admin" && role != "Karyawan" && role != "Murid") {
+              role = "Murid";
+            }
+
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => IzinPage(role: widget.role),
+                builder: (_) => RekapanAdminIzinPage(role: role),
               ),
             );
-          } else {
-            // REKAPAN (tetap di halaman ini)
-            setState(() => selectedTab = index);
+            return;
           }
+
+          // Untuk tab pengajuan
+          setState(() => selectedTab = index);
         },
         child: Center(
           child: Text(
             title,
             style: TextStyle(
               color: selectedTab == index ? Colors.white : Colors.grey.shade700,
-              fontSize: 16,
               fontWeight: FontWeight.w600,
+              fontSize: 16,
             ),
           ),
         ),
@@ -264,7 +370,8 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
               child: TextField(
                 controller: searchController,
                 style: const TextStyle(color: Colors.white),
-                onChanged: (v) => setState(() => keyword = v.toLowerCase()),
+                onChanged: (value) =>
+                    setState(() => keyword = value.toLowerCase()),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   hintText: "Cari Pengguna....",
@@ -279,8 +386,8 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-  // LIST REKAPAN
-  Widget RekapanList() {
+  // LIST IZIN
+  Widget IzinList() {
     var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
@@ -289,16 +396,13 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return IzinCard(filtered[index], index);
+        return izinCard(filtered[index], index);
       },
     );
   }
 
-  // CARD UTAMA
-  Widget IzinCard(Map<String, String> item, int index) {
+  Widget izinCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
-
-    Color badgeColor = item["status"] == "Diterima" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -311,65 +415,42 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER CARD
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.calendar_today, color: Colors.red),
+              const Icon(Icons.calendar_month, color: Color(0xFFDA3B26)),
               const SizedBox(width: 10),
-
-              // INFORMASI UTAMA
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(item["nama"]!,
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
+                            fontSize: 14, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
                     const Text("Periode Izin :",
                         style: TextStyle(color: Colors.black54)),
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
+                    Text(
+                      "${item["tanggal"]} s.d ${item["tanggal"]}",
+                      style: const TextStyle(
                           color: Color(0xFFDA3B26),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        children: [
-                          TextSpan(text: item["mulai"] ?? "-"),
-                          if (item["selesai"] != null) ...[
-                            const TextSpan(text: "  s.d  "),
-                            TextSpan(text: item["selesai"]),
-                          ]
-                        ],
-                      ),
+                          fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
-
-              // KOLOM KANAN (STATUS + PANAH)
               Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // STATUS
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      color: badgeColor,
+                      color: const Color(0xFFFFA954),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      item["status"]!,
-                      style: const TextStyle(color: Colors.white),
-                    ),
+                    child: const Text("Proses",
+                        style: TextStyle(color: Colors.white)),
                   ),
-
-                  const SizedBox(height: 8),
-
-                  // PANAH
+                  const SizedBox(height: 12),
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -377,8 +458,8 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
                       });
                     },
                     child: Container(
-                      width: 32,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: const Color(0xFFDA3B26),
                         borderRadius: BorderRadius.circular(10),
@@ -395,64 +476,47 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
               ),
             ],
           ),
-
-          // DETAIL CARD
           if (isExpanded) ...[
             const SizedBox(height: 15),
-
             detailRow("Alamat Email :", item["email"]!),
             detailRow("Alasan :", item["alasan"]!),
             detailRow("Sisa cuti :", item["sisa"]!),
-            detailRow(
-              "Tanggal :",
-              item["mulai"]! +
-                  (item["selesai"] != null ? " s.d ${item["selesai"]}" : ""),
-            ),
-
+            detailRow("Tanggal :", item["tanggal"]!),
             const SizedBox(height: 15),
-
-            // FILE BUTTON
-            Container(
-              height: 45,
-              decoration: BoxDecoration(
-                color: Colors.deepOrange,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.picture_as_pdf, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text("File", style: TextStyle(color: Colors.white)),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // HAPUS POSISI KANAN
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () => showDeleteConfirm(context),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    "Hapus",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            GestureDetector(
+              onTap: () {},
+              child: Container(
+                height: 45,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDA3B26),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.picture_as_pdf, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text("File", style: TextStyle(color: Colors.white)),
+                  ],
                 ),
               ),
             ),
-          ],
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () => showRejectConfirm(context),
+                  child: buildActionButton("TOLAK", Colors.red),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => showSuccessPopup(context),
+                  child: buildActionButton("TERIMA", const Color(0xFF36546C)),
+                ),
+              ],
+            )
+          ]
         ],
       ),
     );
@@ -467,9 +531,23 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
           Text(label,
               style:
                   const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          Text(value,
-              style: const TextStyle(fontSize: 13, color: Colors.black87)),
+          Text(value, style: const TextStyle(fontSize: 13)),
         ],
+      ),
+    );
+  }
+
+  Widget buildActionButton(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style:
+            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }

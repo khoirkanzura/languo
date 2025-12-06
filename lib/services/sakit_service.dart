@@ -60,7 +60,7 @@ class SakitService {
       final userDoc = await _firestore.collection("users").doc(userId).get();
       final userName = userDoc.data()?["user_name"] ?? "-";
       final userRole = userDoc.data()?["user_role"] ?? "-";
-      final emailUser = userDoc.data()?["user_email"] ?? "-";
+      final userEmail = userDoc.data()?["user_email"] ?? "-";
 
       final uploadResult = await uploadLampiran(
         bytes: lampiranBytes,
@@ -71,8 +71,8 @@ class SakitService {
       await _firestore.collection("pengajuan_sakit").add({
         "userId": userId,
         "userName": userName,
-        "emailUser": emailUser,
         "userRole": userRole,
+        "userEmail": userEmail,
         "tanggalMulai": Timestamp.fromDate(startDate),
         "tanggalSelesai": Timestamp.fromDate(endDate),
         "keterangan": keterangan,
@@ -95,6 +95,50 @@ class SakitService {
         .where("userId", isEqualTo: uid)
         .orderBy("createdAt", descending: true)
         .snapshots();
+  }
+
+  /// ADMIN: Ambil semua pengajuan sakit dengan status "Diajukan"
+  Stream<QuerySnapshot> getAllPengajuanSakitAdmin() {
+    return _firestore
+        .collection("pengajuan_sakit")
+        .orderBy("createdAt", descending: true)
+        .snapshots();
+  }
+
+  /// ADMIN: Ambil semua rekapan sakit (Disetujui & Ditolak)
+  Stream<QuerySnapshot> getAllRekapanSakitAdmin() {
+    return _firestore
+        .collection("pengajuan_sakit")
+        .orderBy("createdAt", descending: true)
+        .snapshots();
+  }
+
+  /// ADMIN: Setujui pengajuan sakit
+  Future<void> approvePengajuanSakit(String sakitId) async {
+    try {
+      await _firestore.collection("pengajuan_sakit").doc(sakitId).update({
+        "status": "Disetujui",
+        "approvedAt": FieldValue.serverTimestamp(),
+      });
+      debugPrint("Pengajuan sakit $sakitId disetujui");
+    } catch (e) {
+      debugPrint("Error approvePengajuanSakit: $e");
+      rethrow;
+    }
+  }
+
+  /// ADMIN: Tolak pengajuan sakit
+  Future<void> rejectPengajuanSakit(String sakitId) async {
+    try {
+      await _firestore.collection("pengajuan_sakit").doc(sakitId).update({
+        "status": "Ditolak",
+        "rejectedAt": FieldValue.serverTimestamp(),
+      });
+      debugPrint("Pengajuan sakit $sakitId ditolak");
+    } catch (e) {
+      debugPrint("Error rejectPengajuanSakit: $e");
+      rethrow;
+    }
   }
 
   /// Hapus pengajuan sakit + lampiran

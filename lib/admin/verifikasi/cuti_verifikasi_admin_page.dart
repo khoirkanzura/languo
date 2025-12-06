@@ -1,35 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:languo/admin/rekapan/sakit_page.dart';
+import 'package:languo/admin/rekapan/cuti_rekapan_admin_page.dart';
 
-class SakitPage extends StatefulWidget {
-  final String role;
+class VerifikasiCutiPage extends StatefulWidget {
+  final String role; // menerima role dari halaman sebelumnya
 
-  const SakitPage({super.key, required this.role});
+  const VerifikasiCutiPage({super.key, required this.role});
 
   @override
-  State<SakitPage> createState() => _SakitPageState();
+  State<VerifikasiCutiPage> createState() => _VerifikasiCutiPageState();
 }
 
-class _SakitPageState extends State<SakitPage> {
+class _VerifikasiCutiPageState extends State<VerifikasiCutiPage> {
   int selectedTab = 0;
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  List<Map<String, String>> dataSakit = [
+  List<Map<String, String>> dataIzin = [
     {
-      "nama": "Han Jisung",
+      "nama": "GERLY VAEYUNGFAN",
       "tanggal": "11 November 2025",
-      "email": "Hanji@gmail.com",
-      "jenis": "Sakit",
-      "file": "surat_sakit.pdf",
+      "email": "gerlyvaeyungfan@gmail.com",
+      "alasan": "Mengambil Cuti Tahunan",
+      "file": "surat_izin2.pdf",
+      "sisa": "3 hari",
+    },
+    {
+      "nama": "BUDI HARTONO",
+      "tanggal": "12 November 2025",
+      "email": "budi@gmail.com",
+      "alasan": "Izin pergi ke rumah sakit",
+      "jenis": "Izin Sakit",
+      "file": "surat_izin2.pdf",
+      "sisa": "2 hari"
     },
   ];
 
   String keyword = "";
 
-  // ============================================================
-  // POPUP TERIMA
-  // ============================================================
+  // ====================== POPUP TERIMA ======================
   void showSuccessPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -54,7 +62,7 @@ class _SakitPageState extends State<SakitPage> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  "Pengajuan telah diterima",
+                  "Pengajuan telah disetujui",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -80,9 +88,7 @@ class _SakitPageState extends State<SakitPage> {
     );
   }
 
-  // ============================================================
-  // POPUP KONFIRMASI TOLAK
-  // ============================================================
+  // ====================== POPUP KONFIRM TOLAK ======================
   void showRejectConfirm(BuildContext context) {
     showDialog(
       context: context,
@@ -153,9 +159,7 @@ class _SakitPageState extends State<SakitPage> {
     );
   }
 
-  // ============================================================
-  // POPUP TOLAK SUKSES
-  // ============================================================
+  // ====================== POPUP TOLAK SUKSES ======================
   void showRejectSuccess(BuildContext context) {
     showDialog(
       context: context,
@@ -206,9 +210,7 @@ class _SakitPageState extends State<SakitPage> {
     );
   }
 
-  // ============================================================
-  // UI
-  // ============================================================
+  // ====================== UI ======================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,13 +220,13 @@ class _SakitPageState extends State<SakitPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: SakitList()),
+          Expanded(child: CutiList()),
         ],
       ),
     );
   }
 
-  // HEADER
+  // HEADER (DINAMIC ROLE)
   Widget header() {
     return Container(
       height: 160,
@@ -241,15 +243,19 @@ class _SakitPageState extends State<SakitPage> {
         child: Align(
           alignment: Alignment.centerLeft,
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
-                onTap: () => Navigator.pop(context),
-                child:
-                    const Icon(Icons.arrow_back, color: Colors.white, size: 26),
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
-                "Sakit  <  ${widget.role}",
+                "Cuti  <  ${widget.role}",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -263,7 +269,7 @@ class _SakitPageState extends State<SakitPage> {
     );
   }
 
-  // TAB BAR + LOGIKA PINDAH HALAMAN
+  // TAB BAR
   Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
@@ -323,7 +329,7 @@ class _SakitPageState extends State<SakitPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => RekapanAdminSakitPage(role: role),
+                builder: (_) => RekapanAdminCutiPage(role: role),
               ),
             );
             return;
@@ -379,9 +385,9 @@ class _SakitPageState extends State<SakitPage> {
     );
   }
 
-  // LIST IZIN SAKIT
-  Widget SakitList() {
-    var filtered = dataSakit
+  // LIST IZIN
+  Widget CutiList() {
+    var filtered = dataIzin
         .where((e) => e["nama"]!.toLowerCase().contains(keyword))
         .toList();
 
@@ -389,12 +395,12 @@ class _SakitPageState extends State<SakitPage> {
       padding: const EdgeInsets.only(top: 10),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        return SakitCard(filtered[index], index);
+        return izinCard(filtered[index], index);
       },
     );
   }
 
-  Widget SakitCard(Map<String, String> item, int index) {
+  Widget izinCard(Map<String, String> item, int index) {
     bool isExpanded = expandedIndex == index;
 
     return AnimatedContainer(
@@ -472,6 +478,8 @@ class _SakitPageState extends State<SakitPage> {
           if (isExpanded) ...[
             const SizedBox(height: 15),
             detailRow("Alamat Email :", item["email"]!),
+            detailRow("Alasan :", item["alasan"]!),
+            detailRow("Sisa cuti :", item["sisa"]!),
             detailRow("Tanggal :", item["tanggal"]!),
             const SizedBox(height: 15),
             GestureDetector(
