@@ -27,7 +27,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -46,7 +46,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () => Navigator.pop(dialogContext),
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
@@ -65,19 +65,45 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
                     Expanded(
                       child: InkWell(
                         onTap: () async {
-                          Navigator.pop(context);
+                          Navigator.pop(dialogContext);
+                          
+                          // Loading indicator
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (ctx) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                          
                           try {
                             await _sakitService.hapusPengajuanSakit(sakitId);
+                            
+                            // Tutup loading
+                            if (mounted) Navigator.pop(context);
+                            
+                            // Tampilkan success message
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text("Data berhasil dihapus")),
+                                  content: Text("Data berhasil dihapus"),
+                                  backgroundColor: Colors.green,
+                                  duration: Duration(seconds: 2),
+                                ),
                               );
                             }
                           } catch (e) {
+                            // Tutup loading
+                            if (mounted) Navigator.pop(context);
+                            
+                            // Tampilkan error message
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Gagal menghapus: $e")),
+                                SnackBar(
+                                  content: Text("Gagal menghapus: $e"),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
                               );
                             }
                           }
@@ -294,7 +320,7 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
     );
   }
 
-  // LIST REKAPAN
+  // LIST REKAPAN DENGAN FILTER ROLE
   Widget RekapanList() {
     return StreamBuilder<QuerySnapshot>(
       stream: _sakitService.getAllRekapanSakitAdmin(),
@@ -308,23 +334,26 @@ class _RekapanAdminSakitPageState extends State<RekapanAdminSakitPage> {
 
         final docs = snapshot.data?.docs ?? [];
 
-        // Filter hanya status "Disetujui" dan "Ditolak"
+        // ========== FILTER STATUS + ROLE ==========
         final rekapanDocs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final status = data['status'] ?? '';
-          return status == 'Disetujui' || status == 'Ditolak';
+          final userRole = data['userRole'] ?? '';
+          
+          // Filter: (Disetujui ATAU Ditolak) DAN userRole sesuai widget.role
+          return (status == 'Disetujui' || status == 'Ditolak') && userRole == widget.role;
         }).toList();
 
         if (rekapanDocs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              "Tidak ada rekapan sakit",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+              "Tidak ada rekapan sakit untuk ${widget.role}",
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
           );
         }
 
-        // Filter berdasarkan keyword
+        // Filter berdasarkan keyword pencarian
         var filtered = rekapanDocs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final nama = (data['userName'] ?? '').toString().toLowerCase();
