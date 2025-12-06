@@ -1,188 +1,155 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-class KehadiranPage extends StatefulWidget {
-  const KehadiranPage({Key? key}) : super(key: key);
+class AdminKehadiranPage extends StatefulWidget {
+  const AdminKehadiranPage({Key? key}) : super(key: key);
 
   @override
-  State<KehadiranPage> createState() => _KehadiranPageState();
+  State<AdminKehadiranPage> createState() => _AdminKehadiranPageState();
 }
 
-class _KehadiranPageState extends State<KehadiranPage> {
-  String selectedTab = 'Dosen';
+class _AdminKehadiranPageState extends State<AdminKehadiranPage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // tab state: 0 = Dosen, 1 = Karyawan
   int selectedTabIndex = 0;
-  TextEditingController searchController = TextEditingController();
-  List<KehadiranData> dosenList = [];
-  List<KehadiranData> karyawanList = [];
-  List<KehadiranData> filteredList = [];
+  String get selectedTabLabel => selectedTabIndex == 0 ? 'Dosen' : 'Karyawan';
+  String get selectedCollection => selectedTabIndex == 0 ? 'dosen' : 'karyawan';
 
-  @override
-  void initState() {
-    super.initState();
-    loadKehadiranData();
+  final TextEditingController searchController = TextEditingController();
+
+  // stream snapshots for users (dosen/karyawan) and absensi
+  Stream<QuerySnapshot> usersStream(String coll) =>
+      _firestore.collection(coll).snapshots();
+
+  Stream<QuerySnapshot> absensiStream() {
+    try {
+      return _firestore
+          .collection('absensi')
+          .orderBy('date', descending: true)
+          .snapshots();
+    } catch (e) {
+      // Jika orderBy error (missing index), fallback tanpa orderBy
+      debugPrint('Error orderBy absensi: $e');
+      return _firestore.collection('absensi').snapshots();
+    }
   }
 
-  void loadKehadiranData() {
-    // Data Dosen
-    dosenList = [
-      KehadiranData(
-        nama: 'Kartika Tri Juliana',
-        email: 'Kartika@gmail.com',
-        kelas: 'Kelas Mandarin',
-        hariTanggal: 'Jum, 30 Okt 2025',
-        masuk: '08:11',
-        keluar: '18:05',
-        status: 'Tepat Waktu',
-        statusMasuk: 'Tepat Waktu',
-        statusKeluar: 'Tepat Waktu',
-      ),
-      KehadiranData(
-        nama: 'Kartika Tri Juliana',
-        email: 'Kartika@gmail.com',
-        kelas: 'Kelas Mandarin',
-        hariTanggal: 'Jum, 30 Okt 2025',
-        masuk: '08:17',
-        keluar: '18:05',
-        status: 'Terlambat',
-        statusMasuk: 'Terlambat',
-        statusKeluar: 'Tepat Waktu',
-      ),
-      KehadiranData(
-        nama: 'Budi Santoso',
-        email: 'budi.santoso@gmail.com',
-        kelas: 'Kelas Inggris',
-        hariTanggal: 'Jum, 30 Okt 2025',
-        masuk: '08:05',
-        keluar: '17:55',
-        status: 'Tepat Waktu',
-        statusMasuk: 'Tepat Waktu',
-        statusKeluar: 'Tepat Waktu',
-      ),
-    ];
-
-    // Data Karyawan
-    karyawanList = [
-      KehadiranData(
-        nama: 'Ahmad Fauzi',
-        email: 'ahmad.fauzi@company.com',
-        kelas: 'Staff Administrasi',
-        hariTanggal: 'Jum, 30 Okt 2025',
-        masuk: '07:55',
-        keluar: '17:00',
-        status: 'Tepat Waktu',
-        statusMasuk: 'Tepat Waktu',
-        statusKeluar: 'Tepat Waktu',
-      ),
-      KehadiranData(
-        nama: 'Siti Nurhaliza',
-        email: 'siti.nur@company.com',
-        kelas: 'Guru Matematika',
-        hariTanggal: 'Jum, 30 Okt 2025',
-        masuk: '08:20',
-        keluar: '16:50',
-        status: 'Terlambat',
-        statusMasuk: 'Terlambat',
-        statusKeluar: 'Tepat Waktu',
-      ),
-    ];
-
-    updateFilteredList();
-  }
-
-  void updateFilteredList() {
-    setState(() {
-      List<KehadiranData> currentList =
-          selectedTab == 'Dosen' ? dosenList : karyawanList;
-
-      if (searchController.text.isEmpty) {
-        filteredList = currentList;
+  // format tanggal display
+  String _formatDisplayDate(dynamic firestoreDate) {
+    try {
+      DateTime dt;
+      if (firestoreDate is Timestamp) {
+        dt = firestoreDate.toDate();
+      } else if (firestoreDate is String) {
+        dt = DateTime.parse(firestoreDate);
+      } else if (firestoreDate == null) {
+        return 'Tanggal tidak tersedia';
       } else {
-        String query = searchController.text.toLowerCase();
-        filteredList = currentList
-            .where((data) =>
-                data.nama.toLowerCase().contains(query) ||
-                data.email.toLowerCase().contains(query) ||
-                data.kelas.toLowerCase().contains(query))
-            .toList();
+        return firestoreDate.toString();
       }
-    });
+      return DateFormat('EEE, dd MMM yyyy', 'id').format(dt);
+    } catch (e) {
+      debugPrint('Error format date: $e');
+      return firestoreDate?.toString() ?? 'Tanggal tidak valid';
+    }
   }
 
-  void filterKehadiran(String query) {
-    updateFilteredList();
+  // compute status
+  String computeStatus(String checkIn, String checkOut) {
+    if (checkIn.isEmpty) return 'Proses';
+    if (checkOut.isEmpty) return 'Proses';
+    return 'Sudah Absen';
   }
 
-  void deleteKehadiran(int index) {
+  // warna jam (hijau jika ada, abu jika kosong)
+  Color jamColor(String jam) => jam.isEmpty ? Colors.grey : Colors.green;
+
+  // delete absensi doc
+  Future<void> _deleteAbsensi(String docId) async {
+    try {
+      await _firestore.collection('absensi').doc(docId).delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Data absensi berhasil dihapus'),
+              backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Gagal menghapus data: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // confirm delete
+  void _confirmDelete(String docId) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus data'),
+        content:
+            const Text('Apakah Anda yakin ingin menghapus data absensi ini?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteAbsensi(docId);
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
           ),
-          title: const Text('Konfirmasi'),
-          content: const Text(
-              'Apakah Anda yakin ingin menghapus data kehadiran ini?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  KehadiranData itemToRemove = filteredList[index];
-                  filteredList.removeAt(index);
-
-                  if (selectedTab == 'Dosen') {
-                    dosenList.removeWhere((data) => data == itemToRemove);
-                  } else {
-                    karyawanList.removeWhere((data) => data == itemToRemove);
-                  }
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Data berhasil dihapus'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
+  // filter absensi by search (name/email)
+  bool _matchesSearch(String query, String nama, String email) {
+    if (query.isEmpty) return true;
+    final q = query.toLowerCase();
+    return nama.toLowerCase().contains(q) || email.toLowerCase().contains(q);
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  // UI BUILD
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-          header(),
-          tabBar(),
-          searchBar(),
-          const SizedBox(height: 16),
-          Expanded(child: kehadiranList()),
+          _buildHeader(),
+          _buildTabBar(),
+          const SizedBox(height: 8),
+          _buildSearchBar(),
+          const SizedBox(height: 12),
+          Expanded(child: _buildCombinedList()),
         ],
       ),
     );
   }
 
-  // HEADER
-  Widget header() {
+  Widget _buildHeader() {
     return Container(
       height: 160,
       width: double.infinity,
       decoration: const BoxDecoration(
         color: Color(0xFF36546C),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(40),
-          bottomRight: Radius.circular(40),
-        ),
+            bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
       ),
       child: SafeArea(
         child: Padding(
@@ -196,9 +163,9 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
-              Expanded(
+              const Expanded(
                 child: Center(
-                  child: const Text(
+                  child: Text(
                     "Rekapan Kehadiran",
                     style: TextStyle(
                         color: Colors.white,
@@ -207,7 +174,7 @@ class _KehadiranPageState extends State<KehadiranPage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 48), // Balance untuk icon button
+              const SizedBox(width: 48),
             ],
           ),
         ),
@@ -215,17 +182,15 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  // TAB BAR
-  Widget tabBar() {
+  Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
       child: Container(
         height: 55,
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F3F5),
-          borderRadius: BorderRadius.circular(40),
-        ),
+            color: const Color(0xFFF0F3F5),
+            borderRadius: BorderRadius.circular(40)),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final tabWidth = constraints.maxWidth / 2;
@@ -249,8 +214,8 @@ class _KehadiranPageState extends State<KehadiranPage> {
                 ),
                 Row(
                   children: [
-                    tabButton("Dosen", 0),
-                    tabButton("Karyawan", 1),
+                    _tabButton('Dosen', 0),
+                    _tabButton('Karyawan', 1),
                   ],
                 ),
               ],
@@ -261,33 +226,30 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  Widget tabButton(String label, int index) {
+  Widget _tabButton(String label, int index) {
+    final bool active = selectedTabIndex == index;
     return Expanded(
       child: GestureDetector(
         onTap: () {
           setState(() {
             selectedTabIndex = index;
-            selectedTab = label;
             searchController.clear();
-            updateFilteredList();
           });
         },
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              color: selectedTabIndex == index ? Colors.white : Colors.black54,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+                color: active ? Colors.white : Colors.black54,
+                fontSize: 16,
+                fontWeight: FontWeight.w700),
           ),
         ),
       ),
     );
   }
 
-  // SEARCH BAR
-  Widget searchBar() {
+  Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28.0),
       child: Container(
@@ -296,15 +258,14 @@ class _KehadiranPageState extends State<KehadiranPage> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2))
           ],
         ),
         child: TextField(
           controller: searchController,
-          onChanged: filterKehadiran,
+          onChanged: (_) => setState(() {}),
           style: const TextStyle(color: Colors.white, fontSize: 15),
           decoration: const InputDecoration(
             hintText: 'Cari Pengguna....',
@@ -319,171 +280,274 @@ class _KehadiranPageState extends State<KehadiranPage> {
     );
   }
 
-  // LIST KEHADIRAN
-  Widget kehadiranList() {
-    if (filteredList.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Colors.grey[400],
+  /// Combine users (dosen/karyawan) stream + absensi stream,
+  /// join in memory and filter for the selected role.
+  Widget _buildCombinedList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: usersStream(selectedCollection),
+      builder: (context, usersSnapshot) {
+        if (usersSnapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Error: ${usersSnapshot.error}'),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () => setState(() {}),
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Tidak ada data ditemukan',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+          );
+        }
+        if (!usersSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
-      itemCount: filteredList.length,
-      itemBuilder: (context, index) {
-        return KehadiranCard(
-          data: filteredList[index],
-          onDelete: () => deleteKehadiran(index),
-          isKaryawan: selectedTab == 'Karyawan',
+        final usersDocs = usersSnapshot.data!.docs;
+        
+        // Debug: print jumlah user
+        debugPrint('Total ${selectedTabLabel}: ${usersDocs.length}');
+        
+        // map userId -> userData
+        final Map<String, Map<String, dynamic>> usersMap = {};
+        for (var u in usersDocs) {
+          final data = u.data() as Map<String, dynamic>;
+          usersMap[u.id] = data;
+          // Debug: print user info
+          debugPrint('User ${u.id}: ${data['nama'] ?? data['name'] ?? 'No name'}');
+        }
+
+        if (usersMap.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text('Tidak ada data $selectedTabLabel',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+              ],
+            ),
+          );
+        }
+
+        // now listen to absensi
+        return StreamBuilder<QuerySnapshot>(
+          stream: absensiStream(),
+          builder: (context, absSnapshot) {
+            if (absSnapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text('Error absensi: ${absSnapshot.error}'),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Pastikan Firestore index sudah dibuat',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (!absSnapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final absDocs = absSnapshot.data!.docs;
+            
+            // Debug: print jumlah absensi
+            debugPrint('Total absensi records: ${absDocs.length}');
+
+            // build list of combined entries where abs.user_id exists in usersMap
+            final List<_CombinedEntry> combined = [];
+
+            for (var a in absDocs) {
+              final aData = a.data() as Map<String, dynamic>;
+              final userId = (aData['user_id'] ?? '').toString().trim();
+              
+              // Debug: print absensi info
+              debugPrint('Absensi ${a.id}: user_id=$userId');
+              
+              if (userId.isEmpty) {
+                debugPrint('  -> Skipped: user_id kosong');
+                continue;
+              }
+              
+              if (!usersMap.containsKey(userId)) {
+                debugPrint('  -> Skipped: user_id tidak ditemukan di $selectedCollection');
+                continue; // skip absensi not for this role
+              }
+
+              final user = usersMap[userId]!;
+              final nama = (user['nama'] ?? user['name'] ?? 'Tanpa Nama').toString();
+              final email = (user['email'] ?? 'Tanpa Email').toString();
+
+              // read fields from absensi
+              final checkIn = (aData['check_in'] ?? '').toString();
+              final checkOut = (aData['check_out'] ?? '').toString();
+              final date = aData['date'];
+              final tanggal = _formatDisplayDate(date);
+
+              final status = computeStatus(checkIn, checkOut);
+
+              // search filter
+              final query = searchController.text.trim();
+              if (!_matchesSearch(query, nama, email)) {
+                debugPrint('  -> Skipped: tidak cocok dengan search query');
+                continue;
+              }
+
+              debugPrint('  -> Added to list: $nama');
+
+              combined.add(_CombinedEntry(
+                absId: a.id,
+                userId: userId,
+                nama: nama,
+                email: email,
+                checkIn: checkIn,
+                checkOut: checkOut,
+                tanggal: tanggal,
+                status: status,
+                rawAbsensi: aData,
+              ));
+            }
+
+            debugPrint('Total combined entries for $selectedTabLabel: ${combined.length}');
+
+            if (combined.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text('Tidak ada data kehadiran $selectedTabLabel',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                    const SizedBox(height: 8),
+                    Text(
+                      searchController.text.isNotEmpty
+                          ? 'Coba kata kunci pencarian lain'
+                          : 'Belum ada data absensi untuk $selectedTabLabel',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
+              itemCount: combined.length,
+              itemBuilder: (context, idx) {
+                final item = combined[idx];
+                return _buildAdminCard(item);
+              },
+            );
+          },
         );
       },
     );
   }
-}
 
-class KehadiranCard extends StatelessWidget {
-  final KehadiranData data;
-  final VoidCallback onDelete;
-  final bool isKaryawan;
-
-  const KehadiranCard({
-    Key? key,
-    required this.data,
-    required this.onDelete,
-    this.isKaryawan = false,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildAdminCard(_CombinedEntry item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            spreadRadius: 0,
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                spreadRadius: 0,
+                blurRadius: 12,
+                offset: const Offset(0, 3))
+          ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Nama, Email dan Status
+          // row top: avatar | nama,email | badge
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
+              // Avatar placeholder
               Container(
                 width: 44,
                 height: 44,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF9E9E9E),
-                  shape: BoxShape.circle,
-                ),
+                    color: Color(0xFF9E9E9E), shape: BoxShape.circle),
                 child: const Icon(Icons.person, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 12),
-
-              // Nama dan Email
+              // name & email
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.nama,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      data.email,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF757575),
-                      ),
-                    ),
-                  ],
-                ),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.nama,
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87)),
+                      const SizedBox(height: 3),
+                      Text(item.email,
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF757575))),
+                    ]),
               ),
-
-              // Status Badge
+              // badge status (Sudah Absen / Proses)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: data.statusMasuk == 'Terlambat'
-                      ? const Color(0xFFEF5350)
-                      : const Color(0xFF5CB85C),
+                  color: item.status == 'Sudah Absen'
+                      ? const Color(0xFF5CB85C)
+                      : const Color(0xFFFFA500),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  data.statusMasuk == 'Terlambat' ? 'Terlambat' : 'Tepat Waktu',
+                  item.status == 'Sudah Absen' ? 'sudah absen' : 'proses',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 14),
-
-          // Info Detail
-          _buildInfoRow(isKaryawan ? 'Posisi' : 'Kelas', data.kelas),
-          _buildInfoRow('Hari, Tgl', data.hariTanggal),
-          _buildInfoRow('Masuk', data.masuk, statusWaktu: data.statusMasuk),
-          _buildInfoRow('Keluar', data.keluar, statusWaktu: data.statusKeluar),
-
+          const SizedBox(height: 12),
+          // details rows
+          _infoRow('Hari, Tgl', item.tanggal),
+          _infoRow('Masuk', item.checkIn.isEmpty ? '--:--' : item.checkIn,
+              jamColor(item.checkIn)),
+          _infoRow('Keluar', item.checkOut.isEmpty ? '--:--' : item.checkOut,
+              jamColor(item.checkOut)),
           const SizedBox(height: 10),
-
-          // Tombol Hapus
+          // actions (hapus)
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
-              onPressed: onDelete,
+              onPressed: () => _confirmDelete(item.absId),
               icon: const Icon(Icons.delete, size: 16, color: Colors.white),
-              label: const Text(
-                'Hapus',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+              label: const Text('Hapus',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD32F2F),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
             ),
@@ -493,110 +557,56 @@ class KehadiranCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {String? statusWaktu}) {
-    // Tentukan warna berdasarkan status waktu
-    Color textColor = Colors.black87;
-    FontWeight fontWeight = FontWeight.normal;
-
-    if (statusWaktu != null) {
-      fontWeight = FontWeight.w600;
-      if (statusWaktu == 'Terlambat') {
-        textColor = const Color(0xFFEF5350); // Merah untuk terlambat
-      } else {
-        textColor = const Color(0xFF5CB85C); // Hijau untuk tepat waktu
-      }
-    }
-
+  Widget _infoRow(String label, String value, [Color? valueColor]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 70,
-            child: Text(
-              label,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: 70,
+          child: Text(label,
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const Text(
-            ': ',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87)),
+        ),
+        const Text(': ',
             style: TextStyle(
-              fontSize: 13,
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
                 fontSize: 13,
-                color: textColor,
-                fontWeight: fontWeight,
-              ),
-            ),
-          ),
-        ],
-      ),
+                color: Colors.black87,
+                fontWeight: FontWeight.w600)),
+        Expanded(
+          child: Text(value,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: valueColor ?? Colors.black87,
+                  fontWeight: FontWeight.normal)),
+        ),
+      ]),
     );
   }
 }
 
-class KehadiranData {
+// small model for joined entry
+class _CombinedEntry {
+  final String absId;
+  final String userId;
   final String nama;
   final String email;
-  final String kelas;
-  final String hariTanggal;
-  final String masuk;
-  final String keluar;
+  final String checkIn;
+  final String checkOut;
+  final String tanggal;
   final String status;
-  final String statusMasuk;
-  final String statusKeluar;
+  final Map<String, dynamic> rawAbsensi;
 
-  KehadiranData({
+  _CombinedEntry({
+    required this.absId,
+    required this.userId,
     required this.nama,
     required this.email,
-    required this.kelas,
-    required this.hariTanggal,
-    required this.masuk,
-    required this.keluar,
+    required this.checkIn,
+    required this.checkOut,
+    required this.tanggal,
     required this.status,
-    required this.statusMasuk,
-    required this.statusKeluar,
+    required this.rawAbsensi,
   });
-
-  // Backend Integration - Convert dari JSON
-  factory KehadiranData.fromJson(Map<String, dynamic> json) {
-    return KehadiranData(
-      nama: json['nama'] ?? '',
-      email: json['email'] ?? '',
-      kelas: json['kelas'] ?? '',
-      hariTanggal: json['hari_tanggal'] ?? '',
-      masuk: json['masuk'] ?? '',
-      keluar: json['keluar'] ?? '',
-      status: json['status'] ?? '',
-      statusMasuk: json['status_masuk'] ?? '',
-      statusKeluar: json['status_keluar'] ?? '',
-    );
-  }
-
-  // Backend Integration - Convert ke JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'nama': nama,
-      'email': email,
-      'kelas': kelas,
-      'hari_tanggal': hariTanggal,
-      'masuk': masuk,
-      'keluar': keluar,
-      'status': status,
-      'status_masuk': statusMasuk,
-      'status_keluar': statusKeluar,
-    };
-  }
 }

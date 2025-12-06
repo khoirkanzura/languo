@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:languo/admin/verifikasi/izin_verifikasi_admin_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RekapanAdminIzinPage extends StatefulWidget {
   final String role;
@@ -15,106 +17,7 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
   TextEditingController searchController = TextEditingController();
   int expandedIndex = -1;
 
-  // DATA HANYA MENAMPILKAN YANG DITERIMA / DITOLAK
-  List<Map<String, String>> dataIzin = [
-    {
-      "nama": "BUDI HARTONO",
-      "mulai": "12 November 2025",
-      "selesai": "15 November 2025",
-      "email": "budi@gmail.com",
-      "alasan": "Izin pergi ke rumah sakit",
-      "jenis": "Izin sakit",
-      "file": "surat_izin2.pdf",
-      "sisa": "2 hari",
-      "status": "Disetujui",
-    },
-    {
-      "nama": "BUDI HARTONO",
-      "mulai": "10 November 2025",
-      "selesai": "13 November 2025",
-      "email": "budi@gmail.com",
-      "alasan": "Izin pergi ke rumah sakit",
-      "jenis": "Izin Sakit",
-      "file": "surat_izin2.pdf",
-      "sisa": "2 hari",
-      "status": "Ditolak",
-    },
-  ];
-
   String keyword = "";
-
-  // POPUP HAPUS
-  void showDeleteConfirm(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(25),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Hapus data ini?",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 30),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 45,
-                          decoration: BoxDecoration(
-                            color: Colors.grey,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text("Batal",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          height: 45,
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text("Hapus",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ============================================================
-  // UI
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -125,13 +28,64 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
           header(),
           _buildTabBar(),
           searchBar(),
-          Expanded(child: RekapanList()),
+          Expanded(child: buildRekapanStream()),
         ],
       ),
     );
   }
 
-  // HEADER
+  // -------------------------------------------------------------------------
+  // AMBIL DATA FIRESTORE → status Disetujui / Ditolak
+  // -------------------------------------------------------------------------
+
+  Stream<QuerySnapshot> getRekapanIzin() {
+    return FirebaseFirestore.instance
+        .collection("pengajuan_izin")
+        .where("status", whereIn: ["Disetujui", "Ditolak"])
+        .where("userRole", isEqualTo: widget.role) // filter role sesuai
+        .snapshots();
+  }
+
+  // -------------------------------------------------------------------------
+  // STREAMBUILDER
+  // -------------------------------------------------------------------------
+
+  Widget buildRekapanStream() {
+    return StreamBuilder(
+      stream: getRekapanIzin(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text("Belum ada rekapan izin.",
+                style: TextStyle(color: Colors.grey)),
+          );
+        }
+
+        // FILTER pencarian
+        final filteredDocs = snapshot.data!.docs.where((doc) {
+          final nama = (doc["userName"] ?? "").toString().toLowerCase();
+          return nama.contains(keyword);
+        }).toList();
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 10),
+          itemCount: filteredDocs.length,
+          itemBuilder: (context, index) {
+            return IzinCard(filteredDocs[index], index);
+          },
+        );
+      },
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // UI HEADER
+  // -------------------------------------------------------------------------
+
   Widget header() {
     return Container(
       height: 160,
@@ -170,7 +124,10 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-  // TAB
+  // -------------------------------------------------------------------------
+  // TAB BAR
+  // -------------------------------------------------------------------------
+
   Widget _buildTabBar() {
     return Transform.translate(
       offset: const Offset(0, -30),
@@ -215,13 +172,11 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-// TAB BUTTON FIXED (Navigasi ke admin/verifikasi/sakit_page)
   Widget _tab(String title, int index) {
     return Expanded(
       child: GestureDetector(
         onTap: () {
           if (index == 0) {
-            // PENGAJUAN → menuju halaman verifikasi
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -229,7 +184,6 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
               ),
             );
           } else {
-            // REKAPAN (tetap di halaman ini)
             setState(() => selectedTab = index);
           }
         },
@@ -247,7 +201,10 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
+  // -------------------------------------------------------------------------
   // SEARCH BAR
+  // -------------------------------------------------------------------------
+
   Widget searchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -279,26 +236,27 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
     );
   }
 
-  // LIST REKAPAN
-  Widget RekapanList() {
-    var filtered = dataIzin
-        .where((e) => e["nama"]!.toLowerCase().contains(keyword))
-        .toList();
+  // -------------------------------------------------------------------------
+  // CARD IZIN
+  // -------------------------------------------------------------------------
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 10),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        return IzinCard(filtered[index], index);
-      },
-    );
-  }
-
-  // CARD UTAMA
-  Widget IzinCard(Map<String, String> item, int index) {
+  Widget IzinCard(DocumentSnapshot doc, int index) {
     bool isExpanded = expandedIndex == index;
 
-    Color badgeColor = item["status"] == "Disetujui" ? Colors.green : Colors.red;
+    final data = doc.data() as Map<String, dynamic>;
+
+    // Ambil field dari Firestore
+    final nama = data["userName"] ?? "-";
+    final email = data["userEmail"] ?? "-";
+    final alasan = data["keterangan"] ?? "-";
+    final jenis = data["perihal"] ?? "-";
+    final file = data["lampiranUrl"] ?? "";
+    final status = data["status"] ?? "-";
+
+    final mulai = (data["tanggalMulai"] as Timestamp).toDate();
+    final selesai = (data["tanggalSelesai"] as Timestamp).toDate();
+
+    Color badgeColor = status == "Disetujui" ? Colors.green : Colors.red;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -311,49 +269,36 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER CARD
+          // HEADER
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(Icons.calendar_today, color: Colors.red),
               const SizedBox(width: 10),
-
-              // INFORMASI UTAMA
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item["nama"]!,
+                    Text(nama,
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 6),
                     const Text("Periode Izin :",
                         style: TextStyle(color: Colors.black54)),
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          color: Color(0xFFDA3B26),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        children: [
-                          TextSpan(text: item["mulai"] ?? "-"),
-                          if (item["selesai"] != null) ...[
-                            const TextSpan(text: "  s.d  "),
-                            TextSpan(text: item["selesai"]),
-                          ]
-                        ],
+                    Text(
+                      "${format(mulai)}  s.d  ${format(selesai)}",
+                      style: const TextStyle(
+                        color: Color(0xFFDA3B26),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // KOLOM KANAN (STATUS + PANAH)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // STATUS
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -361,15 +306,12 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
                       color: badgeColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      item["status"]!,
-                      style: const TextStyle(color: Colors.white),
-                    ),
+                    child: Text(status,
+                        style: const TextStyle(color: Colors.white)),
                   ),
-
                   const SizedBox(height: 8),
 
-                  // PANAH
+                  // EXPAND BUTTON
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -396,58 +338,78 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
             ],
           ),
 
-          // DETAIL CARD
           if (isExpanded) ...[
             const SizedBox(height: 15),
 
-            detailRow("Alamat Email :", item["email"]!),
-            detailRow("Alasan :", item["alasan"]!),
-            detailRow("Sisa cuti :", item["sisa"]!),
+            detailRow("Alamat Email :", email),
+            detailRow("Alasan :", alasan),
+            detailRow("Jenis Izin :", jenis),
             detailRow(
               "Tanggal :",
-              item["mulai"]! +
-                  (item["selesai"] != null ? " s.d ${item["selesai"]}" : ""),
+              "${format(mulai)} s.d ${format(selesai)}",
             ),
 
             const SizedBox(height: 15),
 
             // FILE BUTTON
-            Container(
-              height: 45,
-              decoration: BoxDecoration(
-                color: Colors.deepOrange,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.picture_as_pdf, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text("File", style: TextStyle(color: Colors.white)),
-                ],
+            GestureDetector(
+              onTap: () async {
+                final uri = Uri.parse(file); // file adalah String URL kamu
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Tidak bisa membuka file")),
+                  );
+                }
+              },
+              child: Container(
+                height: 45,
+                decoration: BoxDecoration(
+                  color: Colors.deepOrange,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.picture_as_pdf, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text("File", style: TextStyle(color: Colors.white)),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 15),
 
-            // HAPUS POSISI KANAN
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () => showDeleteConfirm(context),
+                onTap: () async {
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection("pengajuan_izin")
+                        .doc(doc.id)
+                        .delete();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Data berhasil dihapus")),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Gagal menghapus: $e")),
+                    );
+                  }
+                },
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10)),
                   child: const Text(
                     "Hapus",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -472,5 +434,10 @@ class _RekapanAdminIzinPageState extends State<RekapanAdminIzinPage> {
         ],
       ),
     );
+  }
+
+  // FORMAT TANGGAL
+  String format(DateTime d) {
+    return "${d.day}/${d.month}/${d.year}";
   }
 }

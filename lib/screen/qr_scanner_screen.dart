@@ -16,49 +16,54 @@ class _QRScannerPageState extends State<QRScannerPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isScanned = false;
 
+  // ==============================
+  // CEK JAM 07:00 - 17:00
+  bool _isWithinTimeRange() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day, 7, 0);
+    final end = DateTime(now.year, now.month, now.day, 17, 0);
+    return now.isAfter(start) && now.isBefore(end);
+  }
+  // ==============================
+
   Future<void> _processQR(String qrText) async {
     try {
+      if (!_isWithinTimeRange()) {
+        _showMessage("Di luar jam absensi (07.00 - 17.00)");
+        return;
+      }
+
       final data = jsonDecode(qrText);
-      final session = data['session']; // "check_in" atau "check_out"
-      final timestamp = data['timestamp']; // optional payload
-      final users = data['users']; // list user objects
+      final expiresAtStr = data['expires_at'];
+      final token = data['token']; // anti fake
+      if (expiresAtStr == null || token == null) {
+        _showMessage("QR tidak valid!");
+        return;
+      }
+
+      // Cek expired
+      final expiresAt = DateTime.tryParse(expiresAtStr);
+      if (expiresAt == null || DateTime.now().isAfter(expiresAt)) {
+        _showMessage("QR sudah kedaluwarsa!");
+        return;
+      }
 
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         _showMessage("Anda belum login!");
         return;
       }
+
       final currentUserId = user.uid;
 
-      // Ambil user_name dari koleksi users jika perlu
       final userDoc =
           await _firestore.collection('users').doc(currentUserId).get();
       final currentUserName =
           userDoc.exists ? (userDoc.data()?['user_name'] ?? '') : '';
 
-      // Per tanggal hari ini (yyyy-MM-dd)
       final now = DateTime.now();
       final dateKey =
           "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-
-      // Cek apakah user ada di payload QR (opsional, tergantung QR)
-      bool userInPayload = false;
-      if (users is List) {
-        try {
-          userInPayload = users.any((u) => u['user_id'] == currentUserId);
-        } catch (_) {
-          userInPayload = false;
-        }
-      }
-
-      // Jika payload QR harus memuat user, periksa
-      if (users != null &&
-          users is List &&
-          users.isNotEmpty &&
-          !userInPayload) {
-        _showMessage("Anda tidak terdaftar pada QR ini!");
-        return;
-      }
 
       final docId = "${currentUserId}_$dateKey";
       final docRef = _firestore.collection('absensi').doc(docId);
@@ -68,41 +73,41 @@ class _QRScannerPageState extends State<QRScannerPage> {
       final timeNow =
           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
-      if (session == "check_in") {
-        if (docSnap.exists && (docSnap.data()?['check_in'] ?? '') != '') {
-          _showMessage("Anda sudah Check In hari ini!");
-          return;
-        }
-        // buat dokumen baru atau update check_in
+      // =========================================
+      // LOGIKA BARU: OTOMATIS TENTUKAN SESI
+      // =========================================
+      bool hasCheckIn =
+          docSnap.exists && (docSnap.data()?['check_in'] ?? '') != '';
+      bool hasCheckOut =
+          docSnap.exists && (docSnap.data()?['check_out'] ?? '') != '';
+
+      // ===== CHECK-IN =====
+      if (!hasCheckIn) {
         await docRef.set({
           "user_id": currentUserId,
           "user_name": currentUserName,
           "date": dateKey,
           "check_in": timeNow,
-          "check_out": "", // belum
+          "check_out": "",
           "status": "Proses",
           "created_at": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
         _showMessage("Check In berhasil!", goToKehadiran: true);
-      } else if (session == "check_out") {
-        if (!docSnap.exists || (docSnap.data()?['check_in'] ?? '') == '') {
-          _showMessage("Belum melakukan Check In hari ini!");
-          return;
-        }
-        if ((docSnap.data()?['check_out'] ?? '') != '') {
-          _showMessage("Anda sudah Check Out hari ini!");
-          return;
-        }
+        return;
+      }
 
-        // Tentukan status berdasar check_in time
+      // ===== CHECK-OUT =====
+      if (hasCheckIn && !hasCheckOut) {
+        // Tentukan status
         final checkIn = docSnap.data()?['check_in'] ?? '';
         String newStatus = 'Tepat Waktu';
-        if (checkIn != null && checkIn.toString().contains(':')) {
-          final parts = checkIn.toString().split(':');
+
+        if (checkIn.contains(':')) {
+          final parts = checkIn.split(':');
           final h = int.tryParse(parts[0]) ?? 0;
           final m = int.tryParse(parts[1]) ?? 0;
-          // batas 08:10 -> terlambat jika lewat
+
           if (h > 8 || (h == 8 && m > 10)) {
             newStatus = 'Terlambat';
           }
@@ -115,14 +120,17 @@ class _QRScannerPageState extends State<QRScannerPage> {
         });
 
         _showMessage("Check Out berhasil!", goToKehadiran: true);
-      } else {
-        _showMessage("Session QR tidak dikenali!");
+        return;
+      }
+
+      // ===== SUDAH COMPLETELY ABSEN =====
+      if (hasCheckIn && hasCheckOut) {
+        _showMessage("Anda sudah Check-In dan Check-Out hari ini!");
+        return;
       }
     } catch (e) {
-      // jika json decode gagal atau error lainnya
       _showMessage("QR tidak valid!");
     } finally {
-      // reset scanner setelah delay kecil supaya user bisa scan lagi jika perlu
       Future.delayed(const Duration(milliseconds: 300), () {
         setState(() => _isScanned = false);
       });
@@ -223,9 +231,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
                 child: const Text(
                   "Batal",
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
