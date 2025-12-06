@@ -82,10 +82,6 @@ class _PengajuanSakitPageState extends State<PengajuanSakitPage> {
       _showMessage("Lampiran belum diupload");
       return false;
     }
-    if (keteranganController.text.isEmpty) {
-      _showMessage("Keterangan masih kosong");
-      return false;
-    }
     return true;
   }
 

@@ -18,36 +18,28 @@ class IzinService {
     final storagePath = 'izin_lampiran/$userId/${timestamp}_$cleanFileName';
     final ref = _storage.ref().child(storagePath);
 
-    // Tentukan content type berdasarkan ekstensi file
+    // Tentukan content type
     String ext = fileName.split(".").last.toLowerCase();
-    String contentType = "application/octet-stream";
+    String contentType = {
+          "jpg": "image/jpeg",
+          "jpeg": "image/jpeg",
+          "png": "image/png",
+          "pdf": "application/pdf",
+          "doc": "application/msword",
+          "docx":
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }[ext] ??
+        "application/octet-stream";
 
-    final contentTypes = {
-      "jpg": "image/jpeg",
-      "jpeg": "image/jpeg",
-      "png": "image/png",
-      "pdf": "application/pdf",
-      "doc": "application/msword",
-      "docx":
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    final metadata = SettableMetadata(contentType: contentType);
+
+    await ref.putData(bytes, metadata);
+    final url = await ref.getDownloadURL();
+
+    return {
+      "lampiranUrl": url,
+      "storagePath": storagePath,
     };
-
-    contentType = contentTypes[ext] ?? "application/octet-stream";
-
-    try {
-      final metadata = SettableMetadata(contentType: contentType);
-
-      await ref.putData(bytes, metadata);
-      final url = await ref.getDownloadURL();
-
-      return {
-        'lampiranUrl': url,
-        'storagePath': storagePath,
-      };
-    } on FirebaseException catch (e) {
-      debugPrint("Firebase Storage Upload Error: ${e.code} - ${e.message}");
-      rethrow;
-    }
   }
 
   /// Kirim pengajuan izin ke Firestore
@@ -61,16 +53,14 @@ class IzinService {
     String? keterangan,
   }) async {
     try {
-      // Ambil profile user login
-      final userDoc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(userId)
-          .get();
+      // Ambil data user
+      final userDoc = await _firestore.collection("users").doc(userId).get();
 
       final userName = userDoc.data()?["user_name"] ?? "-";
       final userRole = userDoc.data()?["user_role"] ?? "-";
-      final emailUser = userDoc.data()?["user_email"] ?? "-";
+      final userEmail = userDoc.data()?["user_email"] ?? "-";
 
+      // Upload lampiran
       final uploadResult = await uploadLampiran(
         bytes: lampiranBytes,
         fileName: fileName,
@@ -81,61 +71,46 @@ class IzinService {
       await _firestore.collection("pengajuan_izin").add({
         "userId": userId,
         "userName": userName,
-        "emailUser": emailUser,
         "userRole": userRole,
+        "userEmail": userEmail,
         "perihal": perihal,
         "tanggalMulai": Timestamp.fromDate(startDate),
         "tanggalSelesai": Timestamp.fromDate(endDate),
         "keterangan": keterangan,
-        "lampiranUrl": uploadResult['lampiranUrl'],
-        "storagePath": uploadResult['storagePath'],
+        "lampiranUrl": uploadResult["lampiranUrl"],
+        "storagePath": uploadResult["storagePath"],
         "status": "Diajukan",
         "createdAt": FieldValue.serverTimestamp(),
       });
-    } on FirebaseException catch (e) {
-      debugPrint("Firebase Kirim Pengajuan Error: ${e.code} - ${e.message}");
-      rethrow;
     } catch (e) {
-      debugPrint("General Error in kirimPengajuan: $e");
+      debugPrint("Error kirim pengajuan izin: $e");
       rethrow;
     }
   }
 
-  /// Ambil rekapan izin berdasarkan user
   Stream<QuerySnapshot> getRekapanIzin(String uid) {
     return _firestore
         .collection("pengajuan_izin")
-        .where("userId", isEqualTo: uid)
-        .orderBy("createdAt", descending: true)
+        .where("user_id", isEqualTo: uid)
+        .orderBy("created_at", descending: true)
         .snapshots();
   }
 
-  /// Hapus pengajuan cuti dari Firestore dan lampiran dari Storage
   Future<void> hapusPengajuanIzin(String izinId) async {
     try {
-      final izinDocRef = _firestore.collection('pengajuan_izin').doc(izinId);
+      final izinDocRef = _firestore.collection("pengajuan_izin").doc(izinId);
       final izinDoc = await izinDocRef.get();
 
-      if (!izinDoc.exists) {
-        throw Exception("Dokumen izin tidak ditemukan.");
-      }
+      if (!izinDoc.exists) throw Exception("Dokumen izin tidak ditemukan.");
 
-      final data = izinDoc.data();
-      final storagePath = data?['storagePath'] as String?;
-
+      final storagePath = izinDoc.data()?["storage_path"];
       if (storagePath != null && storagePath.isNotEmpty) {
-        final ref = _storage.ref().child(storagePath);
-        await ref.delete();
-        debugPrint("Lampiran berhasil dihapus dari Storage: $storagePath");
+        await _storage.ref().child(storagePath).delete();
       }
 
       await izinDocRef.delete();
-      debugPrint("Dokumen izin $izinId berhasil dihapus.");
-    } on FirebaseException catch (e) {
-      debugPrint("Firebase Error saat menghapus pengajuan izin: $e");
-      rethrow;
     } catch (e) {
-      debugPrint("General Error saat menghapus pengajuan izin: $e");
+      debugPrint("Error hapus pengajuan izin: $e");
       rethrow;
     }
   }
