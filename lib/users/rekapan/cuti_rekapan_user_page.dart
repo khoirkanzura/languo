@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class CutiRekapanData {
   final String id;
-  final String perihal;
+  final String alasan;
   final DateTime tanggalMulai;
   final DateTime tanggalSelesai;
   final String status;
@@ -16,14 +16,13 @@ class CutiRekapanData {
   final String? lampiranName;
   final String keterangan;
   final DateTime tanggalPengajuan;
-
   final String userName;
   final String userEmail;
-  final String userClass;
+  final String userRole;
 
   CutiRekapanData({
     required this.id,
-    required this.perihal,
+    required this.alasan,
     required this.tanggalMulai,
     required this.tanggalSelesai,
     required this.status,
@@ -33,7 +32,7 @@ class CutiRekapanData {
     required this.tanggalPengajuan,
     required this.userName,
     required this.userEmail,
-    required this.userClass,
+    required this.userRole,
   });
 }
 
@@ -62,7 +61,6 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
       return {
         'userName': 'Data Tidak Ditemukan',
         'userEmail': 'N/A',
-        'userClass': 'N/A',
       };
     }
 
@@ -75,7 +73,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
       'userEmail': data?['user_email'] ??
           _auth.currentUser!.email ??
           'Email Tidak Ditetapkan',
-      'userClass': data?['kelas'] ?? 'Jabatan Tidak Ditetapkan',
+      'userRole': data?['user_role'] ?? 'Jabatan Tidak Ditetapkan',
     };
   }
 
@@ -128,29 +126,31 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
                   final cutiList = docs.map((d) {
                     final data = d.data() as Map<String, dynamic>;
 
-                    DateTime tglMulai =
-                        (data['tanggalMulai'] as Timestamp).toDate();
-                    DateTime tglSelesai =
-                        (data['tanggalSelesai'] as Timestamp).toDate();
+                    DateTime tanggalMulai =
+                        (data['tanggal_mulai'] as Timestamp).toDate();
+                    DateTime tanggalSelesai =
+                        (data['tanggal_selesai'] as Timestamp).toDate();
 
-                    final createdAtTimestamp = data['createdAt'] as Timestamp?;
+                    final createdAtTimestamp = data['created_at'] as Timestamp?;
 
-                    DateTime tglPengajuan =
+                    DateTime tanggalPengajuan =
                         createdAtTimestamp?.toDate() ?? DateTime.now();
 
                     return CutiRekapanData(
                       id: d.id,
-                      perihal: data['alasan'] ?? 'Cuti',
-                      tanggalMulai: tglMulai,
-                      tanggalSelesai: tglSelesai,
+                      alasan: data['alasan'] ?? 'Cuti',
+                      tanggalMulai: tanggalMulai,
+                      tanggalSelesai: tanggalSelesai,
                       status: data['status'] ?? "Diajukan",
-                      lampiranUrl: data['lampiranUrl'],
-                      lampiranName: data['fileName'] ?? 'Lampiran',
+                      lampiranUrl: data['lampiran_url'],
+                      lampiranName: data['file_name'] ?? 'Lampiran',
                       keterangan: data['keterangan'] ?? '-',
-                      tanggalPengajuan: tglPengajuan,
-                      userName: userData['userName']!,
-                      userEmail: userData['userEmail']!,
-                      userClass: userData['userClass']!,
+                      tanggalPengajuan: tanggalPengajuan,
+                      userName: userData['userName'] ?? 'Data Tidak Ditemukan',
+                      userEmail:
+                          userData['userEmail'] ?? 'Email Tidak Ditetapkan',
+                      userRole:
+                          userData['userRole'] ?? 'Jabatan Tidak Ditetapkan',
                     );
                   }).toList();
 
@@ -306,7 +306,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           title: Text(
-            cuti.perihal,
+            cuti.alasan,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -351,7 +351,7 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
                 children: [
                   _buildDetailRow("Nama", cuti.userName),
                   _buildDetailRow("Email", cuti.userEmail),
-                  _buildDetailRow("Kelas/Jabatan", cuti.userClass),
+                  _buildDetailRow("Jabatan", cuti.userRole),
                   const SizedBox(height: 12),
                   _buildDetailRow(
                       "Tgl Pengajuan", _formatTanggal(cuti.tanggalPengajuan)),
@@ -366,9 +366,9 @@ class _RekapanCutiPageState extends State<RekapanCutiPage> {
                         onPressed: () => openPdf(cuti.lampiranUrl!, context),
                         icon: const Icon(Icons.file_download,
                             size: 20, color: Colors.white),
-                        label: Text(
-                          "Lihat Lampiran (${cuti.lampiranName})",
-                          style: const TextStyle(
+                        label: const Text(
+                          "Lihat Lampiran",
+                          style: TextStyle(
                               color: Colors.white, fontWeight: FontWeight.w600),
                         ),
                         style: ElevatedButton.styleFrom(

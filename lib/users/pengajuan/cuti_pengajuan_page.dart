@@ -263,10 +263,10 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
         keterangan: keteranganController.text,
         lampiranBytes: lampiranBytes,
         fileName: lampiranName,
-        sisaCutiSaatPengajuan:
-            sisaCutiSaatPengajuan, // ⬅ kirim apa adanya dari users
+        sisaCutiSaatPengajuan: sisaCutiSaatPengajuan,
       );
 
+      // reset form
       setState(() {
         isSubmitted = true;
         alasanController.clear();
@@ -515,7 +515,7 @@ class _PengajuanCutiPageState extends State<PengajuanCutiPage> {
             ),
           ),
         const SizedBox(height: 20),
-        const Text("Keterangan",
+        const Text("Keterangan (Opsional)",
             style: TextStyle(
                 color: Color(0xFF7F7F7F), fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
